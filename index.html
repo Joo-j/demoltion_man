@@ -3470,7 +3470,7 @@ function updateMe(dt){
   if (me.combo){ me.comboT -= dt; if (me.comboT <= 0){ me.combo = 0; $('#combo').classList.add('hidden'); } }
   me.swingCD -= dt; me.throwCD -= dt; me.eT -= dt;
   // E를 누르고 있으면 잔해를 계속 주워 담는다
-  if ((keys.KeyE || mouseR) && act && inter && inter.kind === 'rubble' && me.eT <= 0){ me.eT = .15; doInteract(); }
+  if (mouseR && act && inter && inter.kind === 'rubble' && me.eT <= 0){ me.eT = .15; doInteract(); }
   // 도구
   me.drilling = false;
   if (mouseL && act && locked && toolsAllowed()){
@@ -3910,7 +3910,6 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
-  if (e.code === 'KeyE'){ me.eT = .3; doInteract(); }
   if (e.code === 'KeyQ') sendPing();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
