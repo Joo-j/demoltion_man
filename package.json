@@ -1,0 +1,16 @@
+{
+  "name": "demolition-crew",
+  "version": "1.0.0",
+  "description": "철거반 — 협동 철거 게임의 중계 서버",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.4"
+  }
+}
