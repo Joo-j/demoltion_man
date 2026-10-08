@@ -2510,7 +2510,7 @@ function applyWorld(m){
   const nowHeld = carry[myId];
   if (nowHeld && !wasHeld){
     me.buried = 0; me.down = 0; me.vel.set(0, 0, 0); me.mash = 0;
-    if (nowHeld.k === 'c'){ toast(`${nameOf(nowHeld.by)}에게 들림! E 연타로 탈출`, 2400, 'carry'); sfx('pick', me.pos); }
+    if (nowHeld.k === 'c'){ toast(`${nameOf(nowHeld.by)}에게 들림! 우클릭 연타로 탈출`, 2400, 'carry'); sfx('pick', me.pos); }
   }
   if (wasHeld && !nowHeld && !me.flyT){ me.vel.set(rand(-2, 2), 4, rand(-2, 2)); }
   const nt = new Set(m.taken), fresh = new Set();
@@ -3370,7 +3370,7 @@ function bodySlam(i, ax){
 const BURY_NEED = 14;
 function bury(){
   if (me.buried > 0 || carry[myId]) return;
-  me.down = 0; knock(new V3(0, 0, 0), 99, '깔렸다! E 연타 · 동료가 꺼내 줄 수 있음');
+  me.down = 0; knock(new V3(0, 0, 0), 99, '깔렸다! 우클릭 연타 · 동료가 꺼내 줄 수 있음');
   me.buried = BURY_NEED; me.vel.set(0, 0, 0);
 }
 function unbury(by){
@@ -3391,7 +3391,7 @@ function knock(impulse, t, msg){
   toast(msg || '쓰러짐!');
 }
 const keys = {};
-let locked = false, mouseL = false;
+let locked = false, mouseL = false, mouseR = false;
 function updateMe(dt){
   const act = me.down <= 0;
   let f = 0, s = 0;
@@ -3458,7 +3458,7 @@ function updateMe(dt){
   if (me.combo){ me.comboT -= dt; if (me.comboT <= 0){ me.combo = 0; $('#combo').classList.add('hidden'); } }
   me.swingCD -= dt; me.throwCD -= dt; me.eT -= dt;
   // E를 누르고 있으면 잔해를 계속 주워 담는다
-  if (keys.KeyE && act && inter && inter.kind === 'rubble' && me.eT <= 0){ me.eT = .15; doInteract(); }
+  if ((keys.KeyE || mouseR) && act && inter && inter.kind === 'rubble' && me.eT <= 0){ me.eT = .15; doInteract(); }
   // 도구
   me.drilling = false;
   if (mouseL && act && locked && toolsAllowed()){
@@ -3822,13 +3822,13 @@ function updateHUD(){
   // 손에 든 것
   const g = GEAR_BY[me.tool];
   let sub = '';
-  if (carry[myId]?.k === 'c') sub = 'E 연타 탈출 · 좌클릭 가능';
-  else if (carry[myId]) sub = '같이 드는 중 · E 놓기';
-  else if (me.buried > 0) sub = 'E 연타';
+  if (carry[myId]?.k === 'c') sub = '우클릭 연타 탈출 · 좌클릭 가능';
+  else if (carry[myId]) sub = '같이 드는 중 · 우클릭 놓기';
+  else if (me.buried > 0) sub = '우클릭 연타';
   else if (liftRole(myId) === 'op') sub = 'A·D 회전 · W·S 높이 · Space·Shift 길이';
-  else if (me.tool === 'person') sub = 'E 던지기';
-  else if (me.tool === 'hands') sub = heavyLoad(myId) && !helpersOf(myId) ? '무거움 · 동료가 E로 같이 들기' : 'E 던지기';
-  else if (me.tool === 'hammer') sub = '좌클릭 · E 줍기 · Q 표시';
+  else if (me.tool === 'person') sub = '좌클릭 던지기';
+  else if (me.tool === 'hands') sub = heavyLoad(myId) && !helpersOf(myId) ? '무거움 · 동료가 우클릭으로 같이 들기' : '좌클릭 던지기';
+  else if (me.tool === 'hammer') sub = '좌클릭 · 우클릭 줍기 · Q 표시';
   else if (g.type === 'throw') sub = `${team.ch[me.tool] || 0}개 · 좌클릭`;
   else if (g.type === 'crane'){ const w = Math.ceil((team.craneAt - t) / 1000); sub = w > 0 ? `${w}초` : '좌클릭'; }
   else sub = '좌클릭';
@@ -3836,7 +3836,7 @@ function updateHUD(){
   setHTML($('#hands'), 'hands', `<b>${esc(title)}</b>${esc(sub)}`);
   // E 안내
   const ie = $('#interact');
-  if (inter && !shopOpen){ setHTML(ie, 'inter', inter.kind === 'none' ? esc(inter.label) : `<kbd>E</kbd> ${esc(inter.label)}`); ie.classList.remove('hidden'); ie.classList.toggle('off', !!inter.off); }
+  if (inter && !shopOpen){ setHTML(ie, 'inter', inter.kind === 'none' ? esc(inter.label) : `<kbd>${inter.kind === 'throw' || inter.kind === 'yeet' ? '좌클릭' : '우클릭'}</kbd> ${esc(inter.label)}`); ie.classList.remove('hidden'); ie.classList.toggle('off', !!inter.off); }
   else ie.classList.add('hidden');
   updateItemTags();
   // 설치한 폭약 → 터뜨리는 법을 계속 보여 준다
@@ -3902,17 +3902,25 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyQ') sendPing();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseL = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseL = mouseR = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
   if (!joined || shopOpen) return;
   initAudio();
   if (!locked){ lockPointer(); return; }
-  if (e.button === 0){ mouseL = true; useTool(); }
-  if (e.button === 2) detonate();
+  // 좌클릭: 들고 있는 잔해·사람을 던지거나 장비 사용 / 우클릭: 줍기·들기·타기 (그럴 게 없으면 기폭)
+  if (e.button === 0){
+    if (inter && (inter.kind === 'throw' || inter.kind === 'yeet')){ doInteract(); return; }
+    mouseL = true; useTool();
+  }
+  if (e.button === 2){
+    const ready = [...dynMap.values()].some(d => d.owner === myId && DET_KINDS.includes(d.kind) && d.stuck && !d.fuse);
+    if (inter && inter.kind !== 'throw' && inter.kind !== 'yeet' && !(ready && (inter.kind === 'drop' || THROWN.includes(me.tool)))){ mouseR = true; me.eT = .3; doInteract(); }
+    else detonate();
+  }
 });
-addEventListener('mouseup', e => { if (e.button === 0) mouseL = false; });
-document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; if (!locked) mouseL = false; });
+addEventListener('mouseup', e => { if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });
+document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; if (!locked) mouseL = mouseR = false; });
 document.addEventListener('mousemove', e => {
   if (!locked) return;
   me.yaw -= e.movementX * .0022;
