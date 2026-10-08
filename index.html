@@ -158,6 +158,13 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 .ping::after{content:'';position:absolute;left:50%;bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:inherit}
 .ping.sos{background:#ff3b1f;border-color:#fff;color:#fff;animation:sos .5s ease-in-out infinite alternate}
 @keyframes sos{to{transform:var(--tf) scale(1.12)}}
+#board{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 20px;min-width:560px}
+#board .st{font-size:12px;font-weight:800;letter-spacing:3px;color:var(--accent);margin-bottom:8px;text-align:center}
+#board table,#endPanel table{width:100%;border-collapse:collapse;font-size:13px}
+#board th,#endPanel th{font-size:11px;font-weight:600;color:var(--dim);text-align:right;padding:4px 8px}
+#board th:first-child,#endPanel th:first-child,#board td:first-child,#endPanel td:first-child{text-align:left}
+#board td,#endPanel td{text-align:right;padding:6px 8px;border-top:1px solid #ffffff12;font-variant-numeric:tabular-nums}
+#board td.top,#endPanel td.top{color:var(--gold);font-weight:800}
 #endAwards{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 12px}
 #endAwards div{padding:5px 10px;border-radius:8px;background:#ffffff10;font-size:12px;color:var(--dim)}
 #endAwards b{color:var(--text);margin-left:4px}
@@ -238,13 +245,14 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
   <div id="truckTag" class="panel hidden"></div>
   <div id="hands" class="panel"></div>
   <div id="money" class="panel"><small>팀 자금</small><span id="moneyVal">$0</span><div id="truckInfo"></div><button id="shopBtn">상점 열기 <kbd>B</kbd></button><div id="shopAlert" class="hidden">새 장비 구매 가능</div></div>
+  <div id="board" class="panel hidden"><div class="st">작업 현황</div><table><thead><tr><th>작업자</th><th>부순 블록</th><th>실은 잔해</th><th>납품액</th><th>철거 수당</th><th>깔림</th></tr></thead><tbody id="boardRows"></tbody></table></div>
   <div id="endPanel" class="panel hidden">
     <div class="st" id="endStage"></div>
     <div id="endGrade"></div>
     <h2 id="endTitle"></h2>
     <div class="sub" id="endSub"></div>
     <div id="endAwards"></div>
-    <table><thead><tr><th>작업자</th><th>부순 블록</th><th>나른 잔해</th><th>깔림</th></tr></thead><tbody id="endRows"></tbody></table>
+    <table><thead><tr><th>작업자</th><th>부순 블록</th><th>실은 잔해</th><th>납품액</th><th>철거 수당</th><th>깔림</th></tr></thead><tbody id="endRows"></tbody></table>
     <div class="again" id="endAgain"></div>
   </div>
 </div>
@@ -1268,7 +1276,7 @@ function pairContact(p, k){
 }
 function wake(p){ if (p.asleep){ p.asleep = false; p.still = 0; } }
 // 울타리(사람이 갈 수 있는 범위) 밖으로는 잔해가 나가지 않는다 → 날아간 잔해도 주우러 갈 수 있다
-const FENCE_X = 29.4, FENCE_Z = 23.4;
+const FENCE_X = 28.6, FENCE_Z = 22.6;
 function fenceContact(p){
   let hit = false;
   const lx = FENCE_X - p.r, lz = FENCE_Z - p.r;
@@ -1351,6 +1359,19 @@ function pullToBed(p, dt){
   p.vel.x = lerp(p.vel.x, ddx * hk, k); p.vel.z = lerp(p.vel.z, ddz * hk, k);
   p.vel.y = lerp(p.vel.y, (high ? ddy * 6 : 11) + DGRAV * dt, k);
 }
+let sweepT = 0;
+function sweepToTruck(dt){
+  sweepT -= dt;
+  if (sweepT > 0 || !truckSolid()) return;
+  sweepT = .5;
+  for (const p of pieces){
+    if (p.cluster || p.sink || p.tossed || p.cell < 0 || !MATS[p.t].value || taken.has(p.cell) || p.pos.y > 2.6) continue;
+    const x = p.pos.x - truckPos.x, z = p.pos.z - truckPos.z;
+    const dx = Math.max(BED.x0 - x, 0, x - BED.x1), dz = Math.max(BED.z0 - z, 0, z - BED.z1);
+    if (Math.hypot(dx, dz) > TRUCK_ZONE || inBed(p.pos)) continue;
+    wake(p); p.tossed = true; p.toBed = null;
+  }
+}
 function inBed(pos){
   const x = pos.x - truckPos.x, z = pos.z - truckPos.z;
   return x > BED.x0 && x < BED.x1 && z > BED.z0 && z < BED.z1 && pos.y > BED.y0 && pos.y < BED.y1;
@@ -1364,6 +1385,7 @@ function checkSleepers(){
     sleepCursor = (sleepCursor + 1) % n;
     const p = pieces[sleepCursor];
     if (!p.asleep) continue;
+    if (!MATS[p.t].value && !p.cluster){ p.sink = true; p.asleep = false; continue; }
     if (p.pos.y - p.ext < .06) continue;
     if (cellAtWorld(p.pos.x, p.pos.y - p.r - .12, p.pos.z) >= 0) continue;
     if (truckSolid() && inBed(p.pos)) continue;
@@ -1567,6 +1589,11 @@ function fxBreak(i, cause){
   if (t === 1){
     chipsAt(center.x, center.y, center.z, 1, 22, power * .8 + 1, dir);
     sfx('glass', center);
+    return;
+  }
+  if (MATS[t].gas){
+    chipsAt(center.x, center.y, center.z, t, 18, power + 2, dir);
+    puff(center.x, center.y, center.z, col, 8, .5, 1.2, 2, 1);
     return;
   }
   const parts = splitBlock(cause && (cause.k === 'boom' || cause.k === 'crane') ? 3 : 2);
@@ -2304,6 +2331,10 @@ let taken = new Set();        // 누군가 집었거나 이미 판 잔해 칸 (�
 let shownTaken = new Set();   // 내 화면에서 이미 조각을 지운 칸
 const carried = {};           // 사람별 트럭에 실은 잔해 수
 const pendingTake = new Map();
+// 사람별 성적 (방장이 세고 모두에게 맞춘다): 부순 블록 · 트럭에 실려 팔린 잔해 수와 금액 · 철거 수당
+let score = {};
+const tossBy = new Map();     // 잔해 칸 → 던진 사람 (방장)
+function sc(id){ return score[id] || (score[id] = { brk: 0, ship: 0, shipV: 0, bonus: 0 }); }
 // 사람끼리 엮인 상태: carry[들린 사람] = { by: 든 사람, k: 'c'(머리 위로 듦) | 'h'(무거운 걸 같이 듦) }
 let carry = {};
 const carrierOf = pid => carry[pid] ? carry[pid].by : null;
@@ -2634,7 +2665,7 @@ function stat(id){
 }
 function worldMsg(){
   return { t: 'world', team: { ...team }, items: [...items.values()].map(it => ({ id: it.id, st: it.st, by: it.by, p: it.p })),
-    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried }, carry, lift: { ...lift, pose: { ...liftPose } } };
+    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried }, carry, score, lift: { ...lift, pose: { ...liftPose } } };
 }
 function hostSync(){ broadcast(worldMsg()); }
 function applyWorld(m){
@@ -2658,11 +2689,13 @@ function applyWorld(m){
   loads = m.loads || {};
   const wasHeld = carry[myId];
   carry = m.carry || {};
+  if (m.score) score = m.score;
   const nowHeld = carry[myId];
   if (nowHeld && !wasHeld){
     me.buried = 0; me.down = 0; me.vel.set(0, 0, 0); me.mash = 0;
     if (nowHeld.k === 'c'){ toast(`${nameOf(nowHeld.by)}에게 들림! 우클릭 연타로 탈출`, 2400, 'carry'); sfx('pick', me.pos); }
   }
+  if (nowHeld && !wasHeld) me.heldAt = performance.now();
   if (wasHeld && !nowHeld && !me.flyT){ me.vel.set(rand(-2, 2), 4, rand(-2, 2)); }
   const nt = new Set(m.taken), fresh = new Set();
   for (const i of nt) if (!shownTaken.has(i)) fresh.add(i);
@@ -2865,7 +2898,11 @@ function bedCells(){
 }
 function truckDepart(cells){
   let raw = 0;
-  for (const i of cells){ raw += MATS[baseType[i]].value; taken.add(i); }
+  for (const i of cells){
+    raw += MATS[baseType[i]].value; taken.add(i);
+    const who = tossBy.get(i);
+    if (who){ const o = sc(who); o.ship++; o.shipV += Math.round(MATS[baseType[i]].value * ST.priceMul()); tossBy.delete(i); }
+  }
   const value = Math.round(raw * ST.priceMul());
   team.money += value; team.delivered += value;
   broadcast({ t: 'truckGo', value, n: cells.size, cells: [...cells] });
@@ -2943,6 +2980,7 @@ function onHostMsg(m){
       break;
     case 'lift': {
       if (!team.owned.lift || !toolsAllowed()) return;
+      if (m.act !== 'leave' && (carry[m.from] || carriedBy(m.from))) return;
       if (m.act === 'op' && !lift.op && lift.rider !== m.from){
         lift.op = m.from;
         const cur = heldBy(m.from), tp = playerPos(m.from);
@@ -2986,6 +3024,7 @@ function onHostMsg(m){
       taken.delete(m.i);
       for (const k in carry) if (carry[k].by === m.from && carry[k].k === 'h') delete carry[k];
       carried[m.from] = (carried[m.from] || 0) + 1;
+      tossBy.set(m.i, m.from);
       broadcast({ t: 'toss', by: m.from, list: [[m.i, m.p, m.v]] });
       hostSync();
       break;
@@ -3149,7 +3188,7 @@ function startRound(stage, newGame){
   items.clear();
   for (const g of GEAR) if (team.owned[g.id] && g.type !== 'vehicle') items.set(g.id, { id: g.id, st: 'table' });
   lift.op = lift.rider = null; Object.assign(liftPose, { yaw: 0, pitch: .12, ext: 0 });
-  loads = {}; taken = new Set(); carry = {}; pendingBonus = null;
+  loads = {}; taken = new Set(); carry = {}; pendingBonus = null; score = {}; tossBy.clear();
   for (const k in carried) delete carried[k];
   Object.assign(truck, { n: 0, value: 0, state: 'here', goAt: 0, backAt: 0 });
   broadcast({ t: 'reset', stage });
@@ -3165,6 +3204,14 @@ function hostTick(){
   }
   hostStrikes();
   hostBonus();
+  // 나간 사람과 엮인 상태가 남아 있으면 푼다 (공중에 떠서 못 움직이는 일 방지)
+  const here = id => id === myId || peers.has(id);
+  let dirty = false;
+  for (const k in carry) if (!here(k) || !here(carry[k].by)){ delete carry[k]; dirty = true; }
+  if (lift.op && !here(lift.op)){ lift.op = null; dirty = true; }
+  if (lift.rider && !here(lift.rider)){ lift.rider = null; dirty = true; }
+  if (scoreDirty && performance.now() > scoreSyncAt){ scoreDirty = false; scoreSyncAt = performance.now() + 1000; dirty = true; }
+  if (dirty) hostSync();
   for (const d of dynMap.values()){
     if (d.kind !== 'thermite' || !d.stuck || d.gone) continue;
     if (!d.burnAt) d.burnAt = tnow;
@@ -3223,6 +3270,7 @@ function applyCells(list, by, cause){
     detach(comp, by);
   }
   if (by) stat(by).blocks += fallen;
+  if (by && amHost() && phase.ph === 'play'){ sc(by).brk += broken.length + fallen; scoreDirty = true; }
   rebuildIntact();
   if (by === myId){
     hitMark(true);
@@ -3238,13 +3286,14 @@ function applyCells(list, by, cause){
     if (fallen > (pendingBonus.top || 0)){ pendingBonus.top = fallen; pendingBonus.p.copy(fallMid); pendingBonus.by = by; }
   }
 }
-let pendingBonus = null;
+let pendingBonus = null, scoreDirty = false, scoreSyncAt = 0;
 function hostBonus(){
   if (!pendingBonus || performance.now() < pendingBonus.at) return;
   const b = pendingBonus; pendingBonus = null;
   if (phase.ph !== 'play') return;
   const v = Math.round(b.n * 2 * ST.priceMul());
   team.money += v; team.delivered += v;
+  if (b.by) sc(b.by).bonus += v;
   broadcast({ t: 'bonus', v, n: b.n, p: b.p.toArray().map(x => +x.toFixed(1)), by: b.by });
   hostSync();
 }
@@ -3891,6 +3940,7 @@ function findRubble(){
   const c = _v.set(me.pos.x - Math.sin(me.yaw) * .9, me.pos.y + .4, me.pos.z - Math.cos(me.yaw) * .9);
   for (const p of pieces){
     if (p.cluster || p.sink || p.cell < 0 || taken.has(p.cell) || pendingTake.has(p.cell) || !MATS[p.t].value) continue;
+    if (p.tossed || p.toBed || inBed(p.pos)) continue;
     const d = p.pos.distanceTo(c);
     if (d < bd){ bd = d; best = p; }
   }
@@ -3901,7 +3951,7 @@ function updateInteract(){
   const own = me.tool !== 'hands' && me.tool !== 'hammer' && me.tool !== 'person';
   if (!joined || !toolsAllowed()) return;
   const held = carry[myId];
-  if (held){ inter = held.k === 'c' ? { kind: 'mash', label: '버둥거리기' } : { kind: 'leave', label: '놓기' }; return; }
+  if (held){ inter = held.k === 'c' ? { kind: 'mash', label: `버둥거리기 ${me.mash}/6` } : { kind: 'leave', label: '놓기' }; return; }
   if (me.buried > 0){ inter = { kind: 'mash', label: `빠져나오기 ${me.buried}` }; return; }
   if (me.down > 0) return;
   const g = GEAR_BY[me.tool];
@@ -3958,7 +4008,7 @@ function doInteract(){
   else if (inter.kind === 'mash'){
     me.av.throwT = 0;
     if (me.buried > 0){ me.buried--; shake = Math.min(1.4, shake + .15); if (me.buried <= 0) unbury(null); }
-    else if (carry[myId] && ++me.mash >= 10){ me.mash = 0; toHost({ t: 'carry', act: 'escape' }); }
+    else if (carry[myId] && ++me.mash >= 6){ me.mash = 0; toHost({ t: 'carry', act: 'escape' }); }
   }
   else if (inter.kind === 'liftOp') toHost({ t: 'lift', act: 'op' });
   else if (inter.kind === 'liftRide') toHost({ t: 'lift', act: 'ride' });
@@ -4021,6 +4071,15 @@ function showEquip(id){
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   sfx('clank', me.pos); sfx('buy', me.pos);
   if (me.av) me.av.equipT = 0;
+}
+// 성적표 줄: 칸마다 1등은 금색
+function scoreRowsHTML(){
+  const ids = crewList().map(x => x.id);
+  const row = id => { const o = score[id] || {}; return { id, brk: o.brk || 0, ship: o.ship || 0, shipV: o.shipV || 0, bonus: o.bonus || 0, downs: id === myId ? me.downs : stats[id]?.downs || 0 }; };
+  const rows = ids.map(row), keys = ['brk', 'ship', 'shipV', 'bonus'];
+  const best = Object.fromEntries(keys.map(k => [k, Math.max(0, ...rows.map(r => r[k]))]));
+  const cell = (r, k, f = v => v) => `<td class="${best[k] > 0 && r[k] === best[k] ? 'top' : ''}">${f(r[k])}</td>`;
+  return rows.sort((a, b) => (b.shipV + b.bonus) - (a.shipV + a.bonus)).map(r => `<tr><td><span class="dot" style="display:inline-block;margin-right:6px;background:${colorOf(r.id)}"></span>${esc(nameOf(r.id))}${r.id === myId ? ' <span class="me">(나)</span>' : ''}</td>${cell(r, 'brk')}${cell(r, 'ship')}${cell(r, 'shipV', fmtMoney)}${cell(r, 'bonus', fmtMoney)}<td>${r.downs}</td></tr>`).join('');
 }
 function demoPct(){ return TOTAL ? Math.round((1 - aliveCount / TOTAL) * 100) : 0; }
 // 결과 등급: 납품 성공 여부 · 걸린 시간 · 얼마나 허물었는지
@@ -4097,7 +4156,7 @@ function updateHUD(){
   else if (liftRole(myId) === 'op') sub = 'A·D 회전 · W·S 높이 · Space·Shift 길이';
   else if (me.tool === 'person') sub = '좌클릭 던지기';
   else if (me.tool === 'hands') sub = heavyLoad(myId) && !helpersOf(myId) ? '무거움 · 동료가 우클릭으로 같이 들기' : '좌클릭 던지기';
-  else if (me.tool === 'hammer') sub = '좌클릭 · 우클릭 줍기 · Q 표시';
+  else if (me.tool === 'hammer') sub = '좌클릭 · 우클릭 줍기 · Q 표시 · Tab 현황';
   else if (me.tool === 'sledge') sub = '좌클릭 · 꾹 눌렀다 떼면 내려찍기';
   else if (g.type === 'throw') sub = `${team.ch[me.tool] || 0}개 · 좌클릭`;
   else if (g.type === 'crane'){ const w = Math.ceil((team.craneAt - t) / 1000); sub = w > 0 ? `${w}초` : '좌클릭'; }
@@ -4109,6 +4168,7 @@ function updateHUD(){
   if (inter && !shopOpen){ setHTML(ie, 'inter', inter.kind === 'none' ? esc(inter.label) : `<kbd>${inter.kind === 'throw' || inter.kind === 'yeet' ? '좌클릭' : '우클릭'}</kbd> ${esc(inter.label)}`); ie.classList.remove('hidden'); ie.classList.toggle('off', !!inter.off); }
   else ie.classList.add('hidden');
   updateItemTags();
+  if (boardOpen) setHTML($('#boardRows'), 'board', scoreRowsHTML());
   // 설치한 폭약 → 터뜨리는 법을 계속 보여 준다
   const mineAll = [...dynMap.values()].filter(d => d.owner === myId);
   const ready = mineAll.filter(d => DET_KINDS.includes(d.kind) && d.stuck && !d.fuse).length, fusing = mineAll.some(d => d.fuse);
@@ -4154,15 +4214,15 @@ function showEnd(){
   const gr = gradeOf(r);
   $('#endGrade').textContent = gr.g; $('#endGrade').style.color = gr.c;
   const ids = crewList().map(x => x.id);
-  const val = (id, k) => id === myId ? ({ blocks: stats[myId]?.blocks || 0, carried: carried[myId] || 0, yeets: me.yeets, flown: me.flown, smacks: me.smacks, saves: me.saves, downs: me.downs })[k]
-    : k === 'carried' ? carried[id] || 0 : stats[id]?.[k] || 0;
+  const val = (id, k) => k === 'carried' ? score[id]?.shipV || 0 : k === 'blocks' ? score[id]?.brk || 0
+    : id === myId ? ({ yeets: me.yeets, flown: me.flown, smacks: me.smacks, saves: me.saves, downs: me.downs })[k] : stats[id]?.[k] || 0;
   const AW = [['carried', '납품왕'], ['blocks', '파괴왕'], ['saves', '구조대'], ['yeets', '인간 투석기'], ['flown', '인간 포탄'], ['smacks', '방해꾼'], ['downs', '깔림 전문']];
   $('#endAwards').innerHTML = AW.map(([k, label]) => {
     let best = null, bv = 0;
     for (const id of ids){ const v = val(id, k); if (v > bv){ bv = v; best = id; } }
     return best ? `<div>${label}<b style="color:${colorOf(best)}">${esc(nameOf(best))}</b> ${bv}</div>` : '';
   }).join('');
-  $('#endRows').innerHTML = ids.map(id => `<tr><td><span class="dot" style="display:inline-block;margin-right:6px;background:${colorOf(id)}"></span>${esc(nameOf(id))}</td><td>${stats[id]?.blocks || 0}</td><td>${carried[id] || 0}</td><td>${id === myId ? me.downs : stats[id]?.downs || 0}</td></tr>`).join('');
+  $('#endRows').innerHTML = scoreRowsHTML();
   $('#endPanel').classList.remove('hidden');
 }
 
@@ -4170,13 +4230,16 @@ function showEnd(){
 addEventListener('keydown', e => {
   if (!joined) return;
   if (e.code === 'KeyB' || (e.code === 'Escape' && shopOpen)){ if (!e.repeat) openShop(!shopOpen); return; }
+  if (e.code === 'Tab'){ e.preventDefault(); if (!e.repeat) showBoard(true); return; }
   if (shopOpen) return;
   keys[e.code] = true;
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
   if (e.code === 'KeyQ') sendPing();
 });
-addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') showBoard(false); });
+function showBoard(v){ boardOpen = v; $('#board').classList.toggle('hidden', !v); if (v) $('#boardRows').innerHTML = scoreRowsHTML(); }
+let boardOpen = false;
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseL = mouseR = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
@@ -4316,6 +4379,7 @@ addEventListener('beforeunload', () => { if (joined) send({ t: 'bye' }); });
 // 탭이 뒤로 가도(requestAnimationFrame이 멈춰도) 상태 전송과 방장 처리는 계속한다
 setInterval(() => {
   if (!joined) return;
+  if (carry[myId]?.k === 'c' && performance.now() - (me.heldAt || 0) > 6000 && performance.now() - (me.escAt || 0) > 1000){ me.escAt = performance.now(); toHost({ t: 'carry', act: 'escape' }); }
   sendState();
   const tnow = performance.now();
   for (const [id, p] of peers) if (tnow - p.last > 6000) dropPeer(id);
@@ -4349,6 +4413,7 @@ function frame(){
   if (steps === 6) acc = 0;
   updateClusters(dt);
   checkSleepers();
+  sweepToTruck(dt);
   evictPieces(dt);
   if (joined) syncScreen();
   if (joined && shownWorld){
