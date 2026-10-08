@@ -49,6 +49,16 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 .pop{position:absolute;left:0;top:0;font-weight:900;font-size:19px;color:var(--gold);text-shadow:0 2px 6px #000,0 0 2px #000;white-space:nowrap;will-change:transform}
 .pop.big{font-size:32px;color:#ff9f1c}
 .pop.coop{color:#8be9ff}
+.pop.eff{font-size:22px;color:#7dff6a}
+#charge{position:absolute;left:50%;top:calc(50% + 22px);width:64px;height:5px;margin-left:-32px;border-radius:3px;background:#0008;overflow:hidden}
+#charge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb02e,#ff4a1c)}
+#charge.full i{background:#fff;box-shadow:0 0 8px #ff8a1f}
+#equip{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;opacity:0}
+#equip b{display:block;font-size:44px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 4px 18px #000c}
+#equip small{display:block;margin-top:4px;font-size:15px;font-weight:700;color:var(--gold);text-shadow:0 2px 6px #000}
+#equip em{display:block;font-style:normal;font-size:12px;font-weight:800;letter-spacing:4px;color:#ff9f1c}
+#equip.show{animation:equip 2.2s ease-out}
+@keyframes equip{0%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}10%{opacity:1;transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%)}}
 #cross{position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%)}
 #cross:before,#cross:after{content:'';position:absolute;background:#fff;box-shadow:0 0 3px #000}
 #cross:before{left:12px;top:4px;width:2px;height:18px}
@@ -211,6 +221,8 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
   <div id="hitmark"></div>
   <div id="combo" class="hidden"></div>
   <div id="bigText"></div>
+  <div id="equip"></div>
+  <div id="charge" class="hidden"><i></i></div>
   <div id="detPrompt" class="hidden"></div>
   <div id="target" class="hidden"><div id="tName"></div><div id="tHp"><i id="tHpFill"></i></div><div id="tHint"></div></div>
   <div id="center"></div>
@@ -1612,11 +1624,43 @@ function fxExplosion(p, big = 1){
     knock(_b.multiplyScalar(12 * (1 - d / 5)).setY(6 * (1 - d / 5) + 2), 1.8);
   }
 }
+function slamFx(p, r, by){
+  const gy = Math.max(.06, p.y - .9);
+  for (let k = 0; k < 28; k++){
+    const a = k / 28 * 6.28, s = rand(3, 6);
+    dust.spawn(p.x + Math.cos(a) * .4, gy + .2, p.z + Math.sin(a) * .4, Math.cos(a) * s, rand(.3, 1.6), Math.sin(a) * s, .62, .58, .52, rand(1.2, 2), rand(3, 5), rand(1, 1.8), .7, -.2, 1.4);
+  }
+  for (let k = 0; k < 18; k++){
+    const a = Math.random() * 6.28, s = rand(4, 10);
+    fire.spawn(p.x, p.y, p.z, Math.cos(a) * s, rand(2, 8), Math.sin(a) * s, 1, rand(.7, .95), .4, .1, .04, rand(.3, .7), 1, 14, .4);
+  }
+  chipsAt(p.x, p.y, p.z, 3, 22, 8);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(p.x, gy, p.z);
+  scene.add(ring); rings.push({ m: ring, t: 0, k: (r + 1) / .45 });
+  sfx('impact', p, .9); sfx('hit', p);
+  addShake(p, by === myId ? 1.1 : .7);
+  for (const q of pieces){
+    if (q.cluster || q.sink) continue;
+    const d = q.pos.distanceTo(p);
+    if (d > r + 1.5) continue;
+    wake(q); _a.copy(q.pos).sub(p).setY(0).normalize();
+    q.vel.addScaledVector(_a, 3 * (1 - d / (r + 1.5))); q.vel.y += 4 * (1 - d / (r + 1.5));
+  }
+  // 옆에 있던 동료는 휘청 넘어진다 (들고 있던 장비를 놓친다)
+  if (joined && by !== myId && !carry[myId] && !liftRole(myId)){
+    const d = Math.hypot(me.pos.x - p.x, me.pos.z - p.z);
+    if (d < r + 1.2 && Math.abs(me.pos.y - gy) < 1.6){
+      _b.set(me.pos.x - p.x, 0, me.pos.z - p.z).normalize();
+      knock(_b.multiplyScalar(6).setY(5), 1.2, `${nameOf(by)}의 내려찍기!`);
+    }
+  }
+}
 function updateFx(dt){
   for (const f of flashes){ f.t = Math.max(0, f.t - dt); f.L.intensity = f.t > 0 ? 1400 * (f.t / .45) ** 2 : 0; }
   for (let k = rings.length - 1; k >= 0; k--){
     const r = rings[k]; r.t += dt;
-    const s = .5 + r.t * 22; r.m.scale.set(s, s, s); r.m.material.opacity = .6 * (1 - r.t / .45);
+    const s = .5 + r.t * (r.k || 22); r.m.scale.set(s, s, s); r.m.material.opacity = .6 * (1 - r.t / .45);
     if (r.t > .45){ scene.remove(r.m); r.m.material.dispose(); rings.splice(k, 1); }
   }
 }
@@ -1727,21 +1771,28 @@ function makeAvatar(color, name){
   add(jack, new THREE.BoxGeometry(.18, .2, .34), jackMat, 0, 0, .06);
   add(jack, new THREE.BoxGeometry(.2, .07, .2), steelMat, 0, .13, .08);
   add(jack, new THREE.CylinderGeometry(.075, .075, .16, 12), steelMat, 0, 0, -.18).rotation.x = Math.PI / 2;
-  add(jack, new THREE.CylinderGeometry(.012, .026, .46, 8), steelMat, 0, 0, -.48).rotation.x = Math.PI / 2;
+  const jackBit = new THREE.MeshStandardMaterial({ color: 0x8a9096, roughness: .3, metalness: .9, emissive: 0xff5a14, emissiveIntensity: 0 });
+  add(jack, new THREE.CylinderGeometry(.012, .026, .46, 8), jackBit, 0, 0, -.48).rotation.x = Math.PI / 2;
+  add(jack, new THREE.SphereGeometry(.022, 8, 6), new THREE.MeshBasicMaterial({ color: 0x46ff6a }), .09, .12, .14);
   jack.position.set(0, 1.12, -.62);
   jack.visible = false;
   body.add(jack);
   // 오함마: 긴 자루 + 큰 머리, 두 손으로 휘두른다
   const sledge = new THREE.Group();
+  const sledgeGlow = new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: .3, metalness: .9, emissive: 0xff5a14, emissiveIntensity: 0 });
   add(sledge, new THREE.CylinderGeometry(.03, .035, 1.0, 8), woodMat, 0, .05, 0);
-  add(sledge, new THREE.BoxGeometry(.2, .22, .46), steelMat, 0, .56, 0);
+  add(sledge, new THREE.CylinderGeometry(.04, .04, .22, 8), blackMat2, 0, -.32, 0);
+  add(sledge, new THREE.BoxGeometry(.22, .24, .5), sledgeGlow, 0, .56, 0);
+  for (const z of [-.27, .27]) add(sledge, new THREE.BoxGeometry(.25, .27, .05), steelMat, 0, .56, z);
+  add(sledge, new THREE.BoxGeometry(.235, .06, .3), new THREE.MeshStandardMaterial({ map: pillarTex, roughness: .6 }), 0, .56, 0);
   sledge.position.set(0, -.55, -.1); sledge.rotation.x = -Math.PI / 2 + .25; sledge.visible = false;
   armR.add(sledge);
   // 절단기: 몸 앞에서 두 손으로 드는 원형 톱
   const cutter = new THREE.Group();
   add(cutter, new THREE.CylinderGeometry(.025, .025, .5, 8), steelMat, 0, .02, .22).rotation.z = Math.PI / 2;
   add(cutter, new THREE.BoxGeometry(.14, .14, .36), new THREE.MeshStandardMaterial({ color: 0xc8361d, roughness: .5 }), 0, 0, .02);
-  add(cutter, new THREE.CylinderGeometry(.2, .2, .018, 28), steelMat, 0, -.02, -.3).rotation.z = Math.PI / 2;
+  const cutBlade = new THREE.MeshStandardMaterial({ color: 0xb8bec4, roughness: .25, metalness: .95, emissive: 0xff7a1a, emissiveIntensity: 0 });
+  add(cutter, new THREE.CylinderGeometry(.2, .2, .018, 28), cutBlade, 0, -.02, -.3).rotation.z = Math.PI / 2;
   add(cutter, new THREE.CylinderGeometry(.21, .21, .06, 20, 1, true, 0, Math.PI), blackMat2, 0, .02, -.3).rotation.z = Math.PI / 2;
   cutter.position.set(0, 1.12, -.6); cutter.visible = false;
   body.add(cutter);
@@ -1774,7 +1825,42 @@ function makeAvatar(color, name){
     g.add(tag);
   }
   scene.add(g);
-  return { g, body, legL, legR, armL, armR, handLoad, load: 0, tools: { hammer, sledge, jack, cutter, dyn: dynProp, grenade: grenadeProp, c4: c4Prop, thermite: thermProp, crane: radio }, pile, tag, heldT: 0, spin: 0, walk: 0, swingT: -1, throwT: -1, downT: 0, vest, tool: 'hammer' };
+  return { g, body, legL, legR, armL, armR, handLoad, load: 0, tools: { hammer, sledge, jack, cutter, dyn: dynProp, grenade: grenadeProp, c4: c4Prop, thermite: thermProp, crane: radio }, pile, tag, sledgeGlow, jackBit, cutBlade, heldT: 0, spin: 0, equipT: -1, lastSw: -1, walk: 0, swingT: -1, throwT: -1, downT: 0, vest, tool: 'hammer' };
+}
+// 망치가 지나간 자리에 남는 빛 궤적 (원호 띠, 앞쪽 끝이 가장 밝다)
+const slashes = [];
+function arcGeo(r0, r1){
+  const seg = 20, pos = [], col = [], idx = [];
+  for (let k = 0; k <= seg; k++){
+    const u = k / seg, th = lerp(-.4, 2.5, u), c = Math.cos(th), sn = -Math.sin(th), b = u * u;
+    pos.push(0, c * r0, sn * r0, 0, c * r1, sn * r1);
+    col.push(b, b, b, b * .3, b * .3, b * .3);
+    if (k < seg){ const i = k * 2; idx.push(i, i + 1, i + 2, i + 1, i + 3, i + 2); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  return g;
+}
+const slashGeoS = arcGeo(.55, 1.05), slashGeoL = arcGeo(.6, 1.45);
+function spawnSlash(a, pitch, big, slam){
+  const m = new THREE.Mesh(big ? slashGeoL : slashGeoS, new THREE.MeshBasicMaterial({ color: slam ? 0xff7a2a : big ? 0xffc890 : 0xffffff, vertexColors: true, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.copy(a.g.position); m.position.y += 1.3;
+  m.rotation.set(clamp(pitch, -.6, .6) * .7, a.g.rotation.y, 0, 'YXZ');
+  m.position.x += Math.cos(a.g.rotation.y) * .22; m.position.z -= Math.sin(a.g.rotation.y) * .22;
+  scene.add(m);
+  slashes.push({ m, t: 0, life: slam ? .3 : .17 });
+}
+function updateSlashes(dt){
+  for (let k = slashes.length - 1; k >= 0; k--){
+    const q = slashes[k];
+    q.t += dt;
+    const u = q.t / q.life;
+    if (u >= 1){ scene.remove(q.m); q.m.material.dispose(); slashes.splice(k, 1); continue; }
+    q.m.material.opacity = .85 * (1 - u);
+    q.m.scale.setScalar(1 + u * .25);
+  }
 }
 function setAvatarTool(a, tool){
   if (a.tool === tool) return;
@@ -1791,9 +1877,9 @@ function setAvatarLoad(a, n, heavy){
   if (heavy) a.handLoad.scale.set(.85, .7, .7); else a.handLoad.scale.set(.45, .38, .4);
 }
 // 사람끼리 엮인 자세: 들림(c)·같이 들기(h)·머리 위로 들고 있음·날아감·깔림
-function poseOf(pid, fly, buried){
+function poseOf(pid, fly, buried, charge){
   const c = carry[pid];
-  return { held: c ? c.k : null, carrying: !!carriedBy(pid), fly, buried };
+  return { held: c ? c.k : null, carrying: !!carriedBy(pid), fly, buried, charge: charge > 0 ? charge : 0 };
 }
 function animAvatar(a, speed, dt, down, drilling, pitch = 0, pose = null){
   a.walk += dt * speed * 2.1;
@@ -1855,6 +1941,26 @@ function animAvatar(a, speed, dt, down, drilling, pitch = 0, pose = null){
     a.armL.rotation.set(-2.6 + f * .6, 0, .6); a.armR.rotation.set(-2.6 - f * .6, 0, -.6);
   } else a.spin = 0;
   a.pile.visible = !!ps.buried;
+  // 오함마 모으기: 머리 위로 치켜들고 떨린다
+  const ch = ps.charge || 0;
+  if (a.tool === 'sledge' && ch > 0){
+    const tr = ch >= 1 ? rand(-.05, .05) : rand(-.015, .015) * ch;
+    a.armR.rotation.set(lerp(-.2, -3.05, Math.min(1, ch * 1.6)) + tr, 0, -.1); a.armL.rotation.set(a.armR.rotation.x, 0, .35);
+    a.body.rotation.x -= ch * .18;
+  }
+  a.sledgeGlow.emissiveIntensity = lerp(a.sledgeGlow.emissiveIntensity, ch * 2.6 + (a.swingT >= 0 && a.slam ? 2 : 0), 1 - Math.exp(-dt * 12));
+  a.jackBit.emissiveIntensity = lerp(a.jackBit.emissiveIntensity, a.tool === 'jack' && drilling ? 1.8 : 0, 1 - Math.exp(-dt * (drilling ? 2 : 1)));
+  a.cutBlade.emissiveIntensity = lerp(a.cutBlade.emissiveIntensity, a.tool === 'cutter' && drilling ? 2.2 : 0, 1 - Math.exp(-dt * 4));
+  // 새 장비를 들면 한 번 들어 보인다
+  if (a.equipT >= 0){
+    a.equipT += dt;
+    const u = a.equipT / .7;
+    if (u >= 1) a.equipT = -1;
+    else { const k = Math.sin(u * Math.PI); a.armR.rotation.set(-.2 - 2.6 * k, 0, -.2 * k); }
+  }
+  // 휘두르기 궤적
+  if (a.swingT >= .38 && a.lastSw < .38 && (a.tool === 'hammer' || a.tool === 'sledge')) spawnSlash(a, pitch, a.tool === 'sledge', a.slam);
+  a.lastSw = a.swingT;
   if (a.tag) a.tag.position.y = 2.25 - a.heldT * 1.5;
 }
 
@@ -2099,10 +2205,10 @@ function castRay(o, d, maxT, tMin = 0){
 // 장비는 현장 공구 테이블에 실물로 하나씩만 있다. type: melee(휘두르기) · hold(누르고 있기) · throw(소모품) · crane
 const GEAR = [
   { id: 'dyn', name: '다이너마이트 가방', type: 'throw', price: 900, unlock: 2, start: 3, pack: { n: 3, price: 60 }, desc: '넓은 범위 폭발 · 우클릭 기폭' },
-  { id: 'sledge', name: '오함마', type: 'melee', price: 350, desc: '주변 블록까지 함께 부숨' },
+  { id: 'sledge', name: '오함마', type: 'melee', price: 350, desc: '벽돌·나무·유리 ×2 · 꾹 눌렀다 떼면 내려찍기', spec: '벽돌·나무·유리 ×2 · 꾹 눌렀다 떼면 내려찍기' },
   { id: 'grenade', name: '충격탄 상자', type: 'throw', price: 250, start: 4, pack: { n: 4, price: 80 }, desc: '닿으면 바로 폭발 · 기둥 피해 없음' },
-  { id: 'jack', name: '착암기', type: 'hold', price: 500, desc: '누르고 있으면 연속 타격' },
-  { id: 'cutter', name: '절단기', type: 'hold', price: 700, desc: '기둥을 혼자 절단' },
+  { id: 'jack', name: '착암기', type: 'hold', price: 500, desc: '콘크리트·슬래브 ×2 · 누르고 있으면 연속 타격', spec: '콘크리트·슬래브 ×2 · 누르고 있으면 연속 타격' },
+  { id: 'cutter', name: '절단기', type: 'hold', price: 700, desc: '기둥 혼자 절단 · 금고 ×2 · 구리 ×3', spec: '기둥 혼자 절단 · 금고 ×2 · 구리 ×3' },
   { id: 'c4', name: 'C4 가방', type: 'throw', price: 900, start: 2, pack: { n: 1, price: 150 }, desc: '기둥에 큰 피해 · 사람에게도 붙음 · 우클릭 기폭' },
   { id: 'thermite', name: '테르밋 상자', type: 'throw', price: 1100, start: 2, pack: { n: 1, price: 140 }, desc: '붙은 자리부터 아래로 녹임' },
   { id: 'lift', name: '고소 크레인', type: 'vehicle', price: 600, desc: '한 명은 조종, 한 명은 바구니에서 높은 곳을 부숨' },
@@ -2155,6 +2261,16 @@ const ST = {
   tripMs: () => (10 - 3 * lvOf('truckSpd')) * 1000,
   priceMul: () => 1 + .2 * lvOf('price'),
 };
+
+// 공구마다 잘 듣는 재질이 다르다 → 벽 종류에 맞는 장비를 서로 차지하려 한다
+const EFF = {
+  sledge: { 1: 2, 2: 2, 6: 2 },
+  jack: { 3: 2 },
+  cutter: { 7: 3, 9: 2 },
+};
+const effOf = (tool, t) => (EFF[tool] && EFF[tool][t]) || 1;
+const BEST_FOR = { 1: 'sledge', 2: 'sledge', 6: 'sledge', 3: 'jack', 4: 'cutter', 5: 'cutter', 7: 'cutter', 9: 'cutter' };
+const GEAR_SPEC = { dyn: '넓게 폭파 · 우클릭 기폭', grenade: '닿으면 바로 폭발', c4: '기둥 파괴 · 사람에게도 붙음 · 우클릭 기폭', thermite: '붙은 자리부터 아래로 녹임', crane: '쇠공으로 한 줄 관통' };
 
 /* ================= 공구 테이블·트럭 ================= */
 // 현장 실물: 장비 상태(테이블·누가 듦·바닥), 실은 잔해, 트럭
@@ -2533,7 +2649,10 @@ function applyWorld(m){
   for (const i of fresh) pendingTake.delete(i);
   for (const k in carried) delete carried[k];
   Object.assign(carried, m.carried);
+  const prevTool = me.tool;
   me.tool = toolOf(myId);
+  if (me.tool !== prevTool && GEAR_BY[me.tool] && me.tool !== 'hammer') showEquip(me.tool);
+  if (me.tool !== 'sledge') me.charge = -1;
   if (shopOpen) renderShop();
 }
 function onNetMessage(m){
@@ -2562,7 +2681,8 @@ function onMsg(m){
         p.av.g.position.copy(p.pos);
       }
       p.ja = m.ja; p.tp = new V3(...m.p); p.yaw = m.yaw; p.sp = m.sp; p.dn = m.dn; p.dr = m.dr; p.pt = m.pt || 0; p.last = performance.now();
-      p.fl = !!m.fl; p.bu = !!m.bu;
+      p.fl = !!m.fl; p.bu = !!m.bu; p.ch = m.ch || 0;
+      if (m.slm) p.av.slam = true; else if (p.av.swingT < 0) p.av.slam = false;
       if (m.sw !== p.sw){ p.sw = m.sw; p.av.swingT = 0; sfx('swing', p.tp); }
       if (m.th !== p.th){ p.th = m.th; p.av.throwT = 0; }
       const s = stat(m.from); s.name = m.name; s.color = m.color; s.downs = m.downs;
@@ -2647,6 +2767,7 @@ function onMsg(m){
       }
       break;
     case 'saved': if (m.by === myId){ me.saves++; toast(`${nameOf(m.from)} 구조!`, 1800); } break;
+    case 'slamfx': slamFx(new V3(...m.p), m.r, m.from); break;
     case 'ping': addPing(m.from, new V3(...m.p), m.lab); break;
     case 'crane': addStrike(m); break;
     case 'lp': if (lift.op !== myId){ liftPose.yaw = m.yaw; liftPose.pitch = m.pitch; liftPose.ext = m.ext; } break;
@@ -2736,7 +2857,7 @@ function onHostMsg(m){
   switch (m.t){
     case 'hit': {
       if (!toolsAllowed() || !hp[m.i]) return;
-      const t = baseType[m.i], cause = { k: 'hit', p: m.p, tool: m.tool }, dmg = clamp(m.dmg | 0, 1, 8), tw = clamp(m.tw | 0, 0, 2);
+      const t = baseType[m.i], cause = { k: 'hit', p: m.p, tool: m.tool }, dmg = clamp(m.dmg | 0, 1, 16), tw = clamp(m.tw | 0, 0, 2);
       if (MATS[t].coop && m.tool !== 'cutter'){
         const rec = coopHits.get(m.i), tnow = performance.now();
         if (rec && rec.by !== m.from && tnow - rec.t < 1600){
@@ -2857,6 +2978,27 @@ function onHostMsg(m){
         if (k) delete carry[k];
       }
       hostSync();
+      break;
+    }
+    case 'slam': {
+      if (!toolsAllowed() || !Array.isArray(m.p)) return;
+      const p = new V3(...m.p), R = clamp(+m.r || 1, .8, 2.7), DMG = clamp(m.dmg | 0, 1, 16);
+      const cause = { k: 'hit', p: m.p, tool: 'sledge' };
+      const x0 = Math.max(0, Math.floor(p.x - R - OX)), x1 = Math.min(W - 1, Math.floor(p.x + R - OX));
+      const y0 = Math.max(0, Math.floor(p.y - R)), y1 = Math.min(H - 1, Math.floor(p.y + R));
+      const z0 = Math.max(0, Math.floor(p.z - R - OZ)), z1 = Math.min(D - 1, Math.floor(p.z + R - OZ));
+      for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++){
+        const i = x + z * W + y * LAYER;
+        if (!hp[i]) continue;
+        const dd = Math.hypot(p.x - clamp(p.x, OX + x, OX + x + 1), p.y - clamp(p.y, y, y + 1), p.z - clamp(p.z, OZ + z, OZ + z + 1));
+        if (dd >= R) continue;
+        const t = baseType[i];
+        let dmg = Math.ceil(DMG * effOf('sledge', t) * (1 - dd / R * .6));
+        if (MATS[t].coop) dmg = Math.min(dmg, 2);
+        hostDamage(i, dmg, m.from, cause);
+      }
+      broadcast({ t: 'slamfx', p: m.p, r: R, by: m.from });
+      hostFlush();
       break;
     }
     case 'yeet': {
@@ -3319,7 +3461,7 @@ $('#shop').addEventListener('click', e => {
 const PR = .3, PH = 1.75;
 const me = { pos: new V3(), vel: new V3(), yaw: Math.PI, pitch: -.12, onGround: false, down: 0, sw: 0, th: 0, swingCD: 0, swingT: -1, throwCD: 0,
   jackT: 0, eT: 0, drilling: false, downs: 0, av: null, hitDone: false, tool: 'hammer', combo: 0, comboT: 0,
-  buried: 0, mash: 0, flyT: 0, slammed: new Set(), yeets: 0, flown: 0, smacks: 0, saves: 0 };
+  charge: -1, slamPow: 0, buried: 0, mash: 0, flyT: 0, slammed: new Set(), yeets: 0, flown: 0, smacks: 0, saves: 0 };
 function spawnMe(){
   me.pos.set(rand(-5, 5), 0, OZ - rand(5.5, 7)); me.vel.set(0, 0, 0);
   me.yaw = Math.PI; me.pitch = -.12 + (H > 20 ? .15 : 0); me.down = 0; me.buried = 0; me.flyT = 0;
@@ -3408,7 +3550,7 @@ function knock(impulse, t, msg){
   }
   if (liftRole(myId)) toHost({ t: 'lift', act: 'leave' });
   me.down = t; me.vel.add(impulse); me.downs++;
-  me.swingT = -1; me.hitDone = true; me.drilling = false; mouseL = false;
+  me.swingT = -1; me.hitDone = true; me.drilling = false; mouseL = false; me.charge = -1; me.slamPow = 0;
   stat(myId).downs = me.downs;
   sfx('knock', me.pos);
   addShake(me.pos, .8);
@@ -3486,7 +3628,8 @@ function updateMe(dt){
   // 도구
   me.drilling = false;
   if (mouseL && act && locked && toolsAllowed()){
-    if ((me.tool === 'hammer' || me.tool === 'sledge') && me.swingCD <= 0) startSwing();
+    if (me.tool === 'sledge'){ if (me.swingCD <= 0 && me.swingT < 0) me.charge = Math.min(1, Math.max(0, me.charge) + dt / .85); }
+    else if (me.tool === 'hammer' && me.swingCD <= 0) startSwing();
     else if (me.tool === 'jack' || me.tool === 'cutter'){
       me.drilling = true;
       me.jackT -= dt;
@@ -3495,14 +3638,37 @@ function updateMe(dt){
   }
   if (me.swingT >= 0){
     me.swingT += dt / (me.swingTool === 'sledge' ? .7 : .4);
-    if (!me.hitDone && me.swingT >= .45){ me.hitDone = true; meleeHit(ST.meleeDmg(me.swingTool), me.swingTool); }
+    if (!me.hitDone && me.swingT >= .45){
+      me.hitDone = true;
+      if (me.slamPow > 0){ slamHit(me.slamPow); me.slamPow = 0; }
+      else meleeHit(ST.meleeDmg(me.swingTool), me.swingTool);
+    }
     if (me.swingT >= 1) me.swingT = -1;
   }
   setAvatarTool(me.av, me.tool);
   setAvatarLoad(me.av, myLoad, heavyLoad(myId));
   me.av.g.position.copy(me.pos);
   me.av.g.rotation.y = held && held.k === 'c' ? (peers.get(held.by)?.av?.g.rotation.y ?? me.yaw) : me.yaw;
-  animAvatar(me.av, Math.hypot(me.vel.x, me.vel.z), dt, me.down > 0, me.drilling, me.pitch, poseOf(myId, me.flyT > 0, me.buried > 0));
+  animAvatar(me.av, Math.hypot(me.vel.x, me.vel.z), dt, me.down > 0, me.drilling, me.pitch, poseOf(myId, me.flyT > 0, me.buried > 0, me.charge));
+  me.av.slam = me.slamPow > 0 || (me.swingT >= 0 && me.av.slam);
+}
+// 오함마: 꾹 눌러 모았다가 떼면 내려찍는다. 짧게 누르면 보통 휘두르기
+function releaseSledge(){
+  const c = me.charge;
+  me.charge = -1;
+  if (c < 0 || me.tool !== 'sledge' || me.down > 0) return;
+  startSwing();
+  if (c >= .3){ me.slamPow = c; me.swingCD *= 1 + c * .6; }
+}
+function slamHit(c){
+  updateAim();
+  const f = aimDir(new V3()).setY(0).normalize();
+  let p;
+  if (aim && aim.i >= 0 && aim.p.distanceTo(_v.set(me.pos.x, me.pos.y + 1, me.pos.z)) < 3) p = aim.p.clone();
+  else p = new V3(me.pos.x + f.x * 1.6, me.pos.y + .1, me.pos.z + f.z * 1.6);
+  const r = 1.3 + c * 1.3, dmg = Math.round(ST.meleeDmg('sledge') * (1 + c));
+  toHost({ t: 'slam', p: p.toArray().map(v => +v.toFixed(2)), r: +r.toFixed(2), dmg });
+  hitStop = Math.max(hitStop, .09); hitMark(true);
 }
 function startSwing(){
   me.swingTool = me.tool;
@@ -3551,12 +3717,12 @@ function meleeHit(dmg, tool){
   }
   updateAim();
   if (!aim || aim.i < 0 || !aim.reach) return;
-  const p = aim.p.toArray().map(v => +v.toFixed(2));
-  localImpact(aim, tool);
-  toHost({ t: 'hit', i: aim.i, p, dmg, tool, n: aim.n, tw: lvOf('teamwork') });
+  const p = aim.p.toArray().map(v => +v.toFixed(2)), eff = effOf(tool, baseType[aim.i]);
+  localImpact(aim, tool, eff);
+  toHost({ t: 'hit', i: aim.i, p, dmg: Math.round(dmg * eff), tool, n: aim.n, tw: lvOf('teamwork') });
 }
 // 내 타격은 방장 응답을 기다리지 않고 바로 손맛을 준다
-function localImpact(a, tool){
+function localImpact(a, tool, eff = 1){
   const t = baseType[a.i], pp = a.p, n = new V3(a.n[0], a.n[1], a.n[2]);
   const jack = tool === 'jack', heavy = tool === 'sledge';
   if (tool === 'cutter'){
@@ -3572,6 +3738,13 @@ function localImpact(a, tool){
   }
   shakeCell(a.i);
   hitMark(false);
+  // 상성이 맞으면 더 세게 터진다
+  if (eff > 1){
+    sparks(pp, 6 + eff * 3, 3 + eff);
+    chipsAt(pp.x, pp.y, pp.z, t, 6 * eff, 4 + eff, n);
+    shake = Math.min(1.4, shake + .08 * eff);
+    if (tool !== 'jack' || Math.random() < .25) popText(`×${eff}`, pp, 'eff', .6);
+  }
 }
 function throwExplosive(kind){
   if (!joined || me.down > 0 || me.throwCD > 0 || !toolsAllowed()) return;
@@ -3793,6 +3966,13 @@ function crewList(){
 }
 function fmtTime(ms){ const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 $('#shopBtn').addEventListener('click', () => { if (joined) openShop(true); });
+function showEquip(id){
+  const g = GEAR_BY[id], el = $('#equip');
+  el.innerHTML = `<em>장착</em><b>${esc(g.name)}</b><small>${esc(g.spec || GEAR_SPEC[id] || '')}</small>`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  sfx('clank', me.pos); sfx('buy', me.pos);
+  if (me.av) me.av.equipT = 0;
+}
 function toolName(id){ return id === 'hands' ? '잔해 들기' : id === 'person' ? '사람 들기' : GEAR_BY[id].name; }
 function updateHUD(){
   const fill = Math.min(100, team.delivered / QUOTA * 100).toFixed(1) + '%';
@@ -3843,6 +4023,9 @@ function updateHUD(){
   const canBuy = GEAR.some(g => !team.owned[g.id] && team.money >= g.price && !(g.unlock && curStage < g.unlock));
   $('#money').classList.toggle('alert', canBuy);
   $('#shopAlert').classList.toggle('hidden', !canBuy);
+  const ch = $('#charge');
+  if (me.charge > 0){ ch.classList.remove('hidden'); ch.classList.toggle('full', me.charge >= 1); ch.firstChild.style.width = (me.charge * 100).toFixed(0) + '%'; }
+  else ch.classList.add('hidden');
   // 손에 든 것
   const g = GEAR_BY[me.tool];
   let sub = '';
@@ -3853,6 +4036,7 @@ function updateHUD(){
   else if (me.tool === 'person') sub = '좌클릭 던지기';
   else if (me.tool === 'hands') sub = heavyLoad(myId) && !helpersOf(myId) ? '무거움 · 동료가 우클릭으로 같이 들기' : '좌클릭 던지기';
   else if (me.tool === 'hammer') sub = '좌클릭 · 우클릭 줍기 · Q 표시';
+  else if (me.tool === 'sledge') sub = '좌클릭 · 꾹 눌렀다 떼면 내려찍기';
   else if (g.type === 'throw') sub = `${team.ch[me.tool] || 0}개 · 좌클릭`;
   else if (g.type === 'crane'){ const w = Math.ceil((team.craneAt - t) / 1000); sub = w > 0 ? `${w}초` : '좌클릭'; }
   else sub = '좌클릭';
@@ -3880,9 +4064,13 @@ function updateHUD(){
     const w = (hp[aim.i] / hpTab[ty] * 100).toFixed(0) + '%';
     if (ui.thp !== w){ ui.thp = w; $('#tHpFill').style.width = w; }
     let hint = '';
+    const eff = effOf(me.tool, ty), best = BEST_FOR[ty];
     if (melee && !aim.reach) hint = '너무 멂';
-    else if (melee && M.coop && me.tool !== 'cutter') hint = '함께 치면 빠름';
+    else if (eff > 1) hint = `효과 좋음 ×${eff}`;
+    else if (melee && M.coop && me.tool !== 'cutter') hint = best && best !== me.tool ? `함께 치거나 ${GEAR_BY[best].name}` : '함께 치면 빠름';
+    else if (melee && best && best !== me.tool) hint = `${GEAR_BY[best].name}가 잘 듦`;
     setText($('#tHint'), 'tHint', hint);
+    $('#tHint').style.color = eff > 1 ? '#7dff6a' : '';
     tgt.style.opacity = !melee || aim.reach ? 1 : .6;
     $('#cross').classList.toggle('on', !melee || aim.reach);
   } else { tgt.classList.add('hidden'); $('#cross').classList.remove('on'); }
@@ -3942,7 +4130,7 @@ canvas.addEventListener('mousedown', e => {
     else detonate();
   }
 });
-addEventListener('mouseup', e => { if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });
+addEventListener('mouseup', e => { if (e.button === 0){ mouseL = false; releaseSledge(); } if (e.button === 2) mouseR = false; });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; if (!locked) mouseL = mouseR = false; });
 document.addEventListener('mousemove', e => {
   if (!locked) return;
@@ -4030,7 +4218,7 @@ function sendState(){
   if (!net || !joined) return;
   send({ t: 'st', name: myName, color: myColor, ja: joinedAt, p: me.pos.toArray().map(v => +v.toFixed(3)), yaw: +me.yaw.toFixed(3),
     sp: +Math.hypot(me.vel.x, me.vel.z).toFixed(2), sw: me.sw, th: me.th, dn: me.down > 0, downs: me.downs,
-    dr: me.drilling, pt: +me.pitch.toFixed(2), fl: me.flyT > 0 ? 1 : 0, bu: me.buried > 0 ? 1 : 0, aw: [me.yeets, me.flown, me.smacks, me.saves] });
+    dr: me.drilling, pt: +me.pitch.toFixed(2), fl: me.flyT > 0 ? 1 : 0, ch: me.charge > 0 ? +me.charge.toFixed(2) : 0, slm: me.slamPow > 0 ? 1 : 0, bu: me.buried > 0 ? 1 : 0, aw: [me.yeets, me.flown, me.smacks, me.saves] });
   if (lift.op === myId) send({ t: 'lp', yaw: +liftPose.yaw.toFixed(3), pitch: +liftPose.pitch.toFixed(3), ext: +liftPose.ext.toFixed(2) });
 }
 async function startPlaying(){
@@ -4120,7 +4308,7 @@ function frame(){
       p.av.g.rotation.y += dy * k;
       setAvatarTool(p.av, toolOf(id));
       setAvatarLoad(p.av, loadOf(id), heavyLoad(id));
-      animAvatar(p.av, p.sp, dt, p.dn, p.dr, p.pt, poseOf(id, p.fl, p.bu));
+      animAvatar(p.av, p.sp, dt, p.dn, p.dr, p.pt, poseOf(id, p.fl, p.bu, p.ch));
     }
     if (amHost()) hostTick();
     if (shownWorld){ updateHUD(); updatePings(raw); } else updateRoomView();
@@ -4135,6 +4323,7 @@ function frame(){
   updateChips(dt);
   dust.update(dt); fire.update(dt);
   updateFx(dt);
+  updateSlashes(dt);
   updatePops(raw);
   writePieces();
   renderer.render(scene, camera);
