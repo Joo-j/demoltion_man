@@ -19,6 +19,11 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 #prog{width:360px;padding:9px 13px}
 #progLabel{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:6px}
 #progLabel b{color:var(--text);font-size:14px}
+#demoLabel{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:11px;color:var(--dim)}
+#demoLabel b{color:var(--text);min-width:34px}
+#demoBar{flex:1;height:4px;border-radius:2px;background:#ffffff14;overflow:hidden}
+#demoBar i{display:block;height:100%;width:0;background:#c9cdd2;transition:width .4s}
+#endGrade{font-size:84px;font-weight:900;line-height:1;margin:2px 0 4px;text-shadow:0 6px 24px #000a}
 #progBar{position:relative;height:10px;background:#ffffff1c;border-radius:6px;overflow:hidden}
 #progFill{height:100%;width:0;background:linear-gradient(90deg,#ff7a1a,#ffd23f);transition:width .3s}
 #crew{position:absolute;top:14px;left:14px;padding:10px 12px;min-width:230px;font-size:13px}
@@ -214,6 +219,7 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
     <div id="prog" class="panel">
       <div id="progLabel"><span>납품 <b id="progPct">$0</b></span><span id="progGoalLabel">목표 $600</span></div>
       <div id="progBar"><div id="progFill"></div></div>
+      <div id="demoLabel"><span>철거율</span><b id="demoPct">0%</b><div id="demoBar"><i id="demoFill"></i></div></div>
     </div>
   </div>
   <div id="toasts"></div>
@@ -234,6 +240,7 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
   <div id="money" class="panel"><small>팀 자금</small><span id="moneyVal">$0</span><div id="truckInfo"></div><button id="shopBtn">상점 열기 <kbd>B</kbd></button><div id="shopAlert" class="hidden">새 장비 구매 가능</div></div>
   <div id="endPanel" class="panel hidden">
     <div class="st" id="endStage"></div>
+    <div id="endGrade"></div>
     <h2 id="endTitle"></h2>
     <div class="sub" id="endSub"></div>
     <div id="endAwards"></div>
@@ -318,11 +325,11 @@ const T_WOOD = 6, T_COPPER = 7, T_GAS = 8, T_SAFE = 9;
 const NT = MATS.length;
 // 스테이지마다 모양이 다른 건물. shape(x, z) → { floors, kind } (없으면 빈 땅). 층마다 벽 3칸 + 슬래브 1칸.
 const STAGES = [
-  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2000, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10], safes: 2,
+  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2600, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10], safes: 2,
     shape: (x, z) => (x < 7 || z < 6) ? { floors: 2, kind: 'shop' } : null },
-  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 3000, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8], safes: 3,
+  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 4000, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8], safes: 3,
     shape: (x, z) => (x >= 16 && x <= 18 && z >= 7 && z <= 9) ? { floors: 6, kind: 'chimney' } : (x < 15 && z < 10) ? { floors: 2, kind: 'factory' } : null },
-  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 6000, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6], safes: 4,
+  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 7500, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6], safes: 4,
     shape: (x, z) => (x >= 3 && x <= 8 && z <= 5) ? { floors: 7, kind: 'tower' } : (x >= 1 && x <= 10 && z >= 4) ? { floors: 3, kind: 'nave' } : null },
 ];
 let curStage = 0, W = 1, D = 1, H = 1, LAYER = 1, N = 1, OX = 0, OZ = 0, QUOTA = 600, ROUND_SEC = 300;
@@ -373,22 +380,33 @@ function genStage(n){
         const part = kd === 'shop' ? x === 7 && z < 6 : kd === 'factory' ? (x === 5 || x === 10) : kd === 'nave' ? z === 10 : false;
         const gap = ly < 2 && (kd === 'nave' ? x % 4 === 2 : z % 4 === 2);
         if (part && !gap) t = T_WOOD;
-        else if (y >= 4 && !exposedAt(x, z + 1, y) && exposedAt(x, z + 2, y) && x % 3 === 1) t = T_COPPER;
-        else if (ly === 0 && hash1(x * 31 + z * 17 + y * 7 + n * 101) < .045) t = T_GAS;
+        // 배관 통로: 뒷벽 바로 안쪽을 따라 바닥부터 꼭대기까지 한 줄로 이어진다
+        else if (!exposedAt(x, z + 1, y) && exposedAt(x, z + 2, y) && x % 6 === 2) t = T_COPPER;
       }
       baseType[x + z * W + y * LAYER] = t;
     }
   }
-  // 금고: 맨 위층 안쪽 빈칸에 둔다. 크레인·사람 던지기·인간 사다리로 올라가야 일찍 챙길 수 있다
-  const spots = [];
-  for (let z = 1; z < D - 1; z++) for (let x = 0; x < W; x++){
+  const inside = (x, z, y) => x >= 0 && x < W && z >= 0 && z < D && kind[x + z * W] && kind[x + z * W] !== 'chimney' && y < top[x + z * W]
+    && !exposedAt(x - 1, z, y) && !exposedAt(x + 1, z, y) && !exposedAt(x, z - 1, y) && !exposedAt(x, z + 1, y) && !baseType[x + z * W + y * LAYER];
+  // 보일러실: 1층 뒤쪽 구석에 가스통을 모아 둔다
+  let bx = -1, bz = -1;
+  for (let z = D - 1; z >= 0 && bx < 0; z--) for (let x = 0; x < W; x++) if (inside(x, z, 0) && inside(x + 1, z, 0)){ bx = x; bz = z; break; }
+  if (bx >= 0) for (const [dx, dz] of [[0, 0], [1, 0], [0, -1]]) if (inside(bx + dx, bz + dz, 0)) baseType[bx + dx + (bz + dz) * W] = T_GAS;
+  // 사장실: 가장 높은 층 뒷벽을 따라 금고를 나란히 둔다. 크레인·사람 던지기·인간 사다리로 올라가야 일찍 챙긴다
+  let best = null;
+  for (let z = D - 1; z >= 0; z--) for (let x = 0; x < W; x++){
     const k = x + z * W;
     if (!kind[k] || kind[k] === 'chimney' || top[k] < 8) continue;
     const y = top[k] - 4;
-    if (!baseType[k + y * LAYER] && !exposedAt(x - 1, z, y) && !exposedAt(x + 1, z, y) && !exposedAt(x, z - 1, y) && !exposedAt(x, z + 1, y)) spots.push(k + y * LAYER);
+    if (inside(x, z, y) && (!best || y > best.y || (y === best.y && z > best.z))) best = { x, z, y };
   }
-  spots.sort((a, b) => hash1(a * 13 + n) - hash1(b * 13 + n));
-  for (let s = 0; s < Math.min(S.safes, spots.length); s++) baseType[spots[s]] = T_SAFE;
+  if (best){
+    let placed = 0;
+    for (let x = best.x; x < W && placed < S.safes; x++){
+      if (!inside(x, best.z, best.y)) continue;
+      baseType[x + best.z * W + best.y * LAYER] = T_SAFE; placed++;
+    }
+  }
   hpTab = MATS.map((m, t) => m ? Math.round(m.hp * (m.coop ? S.coopMul : t === 3 ? S.slabMul : 1)) : 0);
   TOTAL = 0; typeCount.fill(0);
   for (let i = 0; i < N; i++) if (baseType[i]){ TOTAL++; typeCount[baseType[i]]++; }
@@ -572,20 +590,24 @@ function hazardBand(g, s, y0, y1, a, b){
 }
 const pillarTex = (() => {
   const s = 256, [c, g] = makeCanvas(s);
-  g.fillStyle = '#737981'; g.fillRect(0, 0, s, s);
-  stains(g, s, 6, .12);
-  speckle(g, s, 4000, false, .18); speckle(g, s, 1800, true, .1);
-  hazardBand(g, s, s * .36, s * .64, '#f2c21b', '#1a1a1a');
-  g.strokeStyle = 'rgba(20,20,22,.35)'; g.lineWidth = 5; g.strokeRect(0, 0, s, s);
+  g.fillStyle = '#8d8f8e'; g.fillRect(0, 0, s, s);
+  stains(g, s, 7, .1);
+  speckle(g, s, 4200, false, .16); speckle(g, s, 1800, true, .08);
+  // 거푸집 판자 자국과 폼타이 구멍
+  g.strokeStyle = 'rgba(40,40,42,.22)'; g.lineWidth = 2;
+  for (let y = 64; y < s; y += 64){ g.beginPath(); g.moveTo(0, y); g.lineTo(s, y); g.stroke(); }
+  g.fillStyle = 'rgba(30,30,32,.45)';
+  for (const y of [32, 96, 160, 224]) for (const x of [44, 212]){ g.beginPath(); g.arc(x, y, 4, 0, 7); g.fill(); }
+  g.strokeStyle = 'rgba(20,20,22,.28)'; g.lineWidth = 4; g.strokeRect(0, 0, s, s);
   return toTex(c);
 })();
 const coreTex = (() => {
   const s = 256, [c, g] = makeCanvas(s);
-  g.fillStyle = '#4c5058'; g.fillRect(0, 0, s, s);
-  stains(g, s, 6, .14);
+  g.fillStyle = '#5d6064'; g.fillRect(0, 0, s, s);
+  stains(g, s, 8, .14);
   speckle(g, s, 4200, false, .2); speckle(g, s, 1600, true, .08);
-  hazardBand(g, s, s * .08, s * .2, '#e8e8e8', '#b8261d');
-  hazardBand(g, s, s * .8, s * .92, '#e8e8e8', '#b8261d');
+  g.strokeStyle = 'rgba(25,25,28,.3)'; g.lineWidth = 2;
+  for (let y = 85; y < s; y += 85){ g.beginPath(); g.moveTo(0, y); g.lineTo(s, y); g.stroke(); }
   g.fillStyle = '#2a2d33';
   for (const [x, y] of [[40, 70], [216, 70], [40, 186], [216, 186]]){ g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); }
   g.strokeStyle = 'rgba(10,10,12,.45)'; g.lineWidth = 6; g.strokeRect(0, 0, s, s);
@@ -2770,6 +2792,14 @@ function onMsg(m){
       }
       break;
     case 'saved': if (m.by === myId){ me.saves++; toast(`${nameOf(m.from)} 구조!`, 1800); } break;
+    case 'bonus': {
+      const p = new V3(...m.p); p.y += 2;
+      popText(`철거 수당 +${fmtMoney(m.v)}`, p, 'big', 2.4);
+      sfx('coin', null, Math.min(24, m.n / 4));
+      if (m.n >= 25) toast(`${nameOf(m.by)} · ${m.n}칸 붕괴 · +${fmtMoney(m.v)}`, 3000);
+      const mo = $('#money'); mo.classList.remove('bump'); void mo.offsetWidth; mo.classList.add('bump');
+      break;
+    }
     case 'slamfx': slamFx(new V3(...m.p), m.r, m.from); break;
     case 'ping': addPing(m.from, new V3(...m.p), m.lab); break;
     case 'crane': addStrike(m); break;
@@ -3119,7 +3149,7 @@ function startRound(stage, newGame){
   items.clear();
   for (const g of GEAR) if (team.owned[g.id] && g.type !== 'vehicle') items.set(g.id, { id: g.id, st: 'table' });
   lift.op = lift.rider = null; Object.assign(liftPose, { yaw: 0, pitch: .12, ext: 0 });
-  loads = {}; taken = new Set(); carry = {};
+  loads = {}; taken = new Set(); carry = {}; pendingBonus = null;
   for (const k in carried) delete carried[k];
   Object.assign(truck, { n: 0, value: 0, state: 'here', goAt: 0, backAt: 0 });
   broadcast({ t: 'reset', stage });
@@ -3134,6 +3164,7 @@ function hostTick(){
     if (hostTimers[k].at <= tnow){ const f = hostTimers[k].fn; hostTimers.splice(k, 1); f(); }
   }
   hostStrikes();
+  hostBonus();
   for (const d of dynMap.values()){
     if (d.kind !== 'thermite' || !d.stuck || d.gone) continue;
     if (!d.burnAt) d.burnAt = tnow;
@@ -3153,8 +3184,8 @@ function hostTick(){
   // 라운드는 자동으로 시작하고, 끝나면 결과를 잠깐 보여 준 뒤 자동으로 넘어간다
   if (phase.ph === 'count' && t >= phase.startAt) broadcast({ t: 'phase', phase: { ...phase, ph: 'play' } });
   else if (phase.ph === 'play'){
-    if (team.delivered >= QUOTA) broadcast({ t: 'phase', phase: { ...phase, ph: 'end', nextAt: t + NEXT_MS, res: { ok: true, time: t - phase.startAt, got: team.delivered } } });
-    else if (t >= phase.endAt) broadcast({ t: 'phase', phase: { ...phase, ph: 'end', nextAt: t + NEXT_MS, res: { ok: false, time: ROUND_SEC * 1000, got: team.delivered } } });
+    if (team.delivered >= QUOTA) broadcast({ t: 'phase', phase: { ...phase, ph: 'end', nextAt: t + NEXT_MS, res: { ok: true, time: t - phase.startAt, got: team.delivered, demo: demoPct() } } });
+    else if (t >= phase.endAt) broadcast({ t: 'phase', phase: { ...phase, ph: 'end', nextAt: t + NEXT_MS, res: { ok: false, time: ROUND_SEC * 1000, got: team.delivered, demo: demoPct() } } });
   } else if (phase.ph === 'end' && t >= phase.nextAt){
     const r = phase.res || {};
     if (r.ok && phase.stage >= STAGES.length) startRound(1, true);
@@ -3199,7 +3230,23 @@ function applyCells(list, by, cause){
     shake = Math.min(1.4, shake + .35);
     if (phase.ph === 'play') addCombo(broken.length + fallen);
   }
-  if (fallen >= 25){ fallMid.divideScalar(fallen); bigCollapse(fallMid, fallen); }
+  if (fallen){ fallMid.divideScalar(fallen); if (fallen >= 25) bigCollapse(fallMid, fallen); }
+  // 철거 수당: 덩어리째 무너뜨리면 바로 돈이 된다. 연달아 무너진 건 한 번에 묶어서 준다
+  if (amHost() && fallen >= 10 && phase.ph === 'play'){
+    if (!pendingBonus) pendingBonus = { n: 0, p: fallMid.clone(), by, at: 0 };
+    pendingBonus.n += fallen; pendingBonus.at = performance.now() + 600;
+    if (fallen > (pendingBonus.top || 0)){ pendingBonus.top = fallen; pendingBonus.p.copy(fallMid); pendingBonus.by = by; }
+  }
+}
+let pendingBonus = null;
+function hostBonus(){
+  if (!pendingBonus || performance.now() < pendingBonus.at) return;
+  const b = pendingBonus; pendingBonus = null;
+  if (phase.ph !== 'play') return;
+  const v = Math.round(b.n * 2 * ST.priceMul());
+  team.money += v; team.delivered += v;
+  broadcast({ t: 'bonus', v, n: b.n, p: b.p.toArray().map(x => +x.toFixed(1)), by: b.by });
+  hostSync();
 }
 const coopMarks = [];
 const markGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.06, 1.06, 1.06));
@@ -3746,7 +3793,6 @@ function localImpact(a, tool, eff = 1){
     sparks(pp, 6 + eff * 3, 3 + eff);
     chipsAt(pp.x, pp.y, pp.z, t, 6 * eff, 4 + eff, n);
     shake = Math.min(1.4, shake + .08 * eff);
-    if (tool !== 'jack' || Math.random() < .25) popText(`×${eff}`, pp, 'eff', .6);
   }
 }
 function throwExplosive(kind){
@@ -3976,12 +4022,25 @@ function showEquip(id){
   sfx('clank', me.pos); sfx('buy', me.pos);
   if (me.av) me.av.equipT = 0;
 }
+function demoPct(){ return TOTAL ? Math.round((1 - aliveCount / TOTAL) * 100) : 0; }
+// 결과 등급: 납품 성공 여부 · 걸린 시간 · 얼마나 허물었는지
+function gradeOf(r){
+  if (!r.ok) return { g: 'F', c: '#ff5a3c' };
+  const tr = r.time / (ROUND_SEC * 1000), d = r.demo || 0;
+  if (tr < .55 && d >= 70) return { g: 'S', c: '#ffd23f' };
+  if (tr < .8 && d >= 50) return { g: 'A', c: '#8bdc3a' };
+  if (d >= 30) return { g: 'B', c: '#2ec4f0' };
+  return { g: 'C', c: '#c9cdd2' };
+}
 function toolName(id){ return id === 'hands' ? '잔해 들기' : id === 'person' ? '사람 들기' : GEAR_BY[id].name; }
 function updateHUD(){
   const fill = Math.min(100, team.delivered / QUOTA * 100).toFixed(1) + '%';
   setText($('#progPct'), 'pct', fmtMoney(team.delivered));
   if (ui.fill !== fill){ ui.fill = fill; $('#progFill').style.width = fill; }
   setText($('#progGoalLabel'), 'goal', `목표 ${fmtMoney(QUOTA)}`);
+  const demo = demoPct();
+  setText($('#demoPct'), 'demo', demo + '%');
+  if (ui.demoW !== demo){ ui.demoW = demo; $('#demoFill').style.width = demo + '%'; }
   const t = serverNow(), S = STAGES[curStage - 1];
   let phaseText = `STAGE ${curStage} · ${S.name}`, timer = fmtTime(ROUND_SEC * 1000), center = '', warn = false;
   if (phase.ph === 'count'){
@@ -4069,7 +4128,7 @@ function updateHUD(){
     let hint = '';
     const eff = effOf(me.tool, ty), best = BEST_FOR[ty];
     if (melee && !aim.reach) hint = '너무 멂';
-    else if (eff > 1) hint = `효과 좋음 ×${eff}`;
+    else if (eff > 1) hint = '잘 듦';
     else if (melee && M.coop && me.tool !== 'cutter') hint = best && best !== me.tool ? `함께 치거나 ${GEAR_BY[best].name}` : '함께 치면 빠름';
     else if (melee && best && best !== me.tool) hint = `${GEAR_BY[best].name}가 잘 듦`;
     setText($('#tHint'), 'tHint', hint);
@@ -4091,7 +4150,9 @@ function showEnd(){
   $('#endStage').textContent = `STAGE ${phase.stage} · ${S.name}`;
   $('#endTitle').textContent = r.ok ? (last ? '모든 현장 완료!' : '납품 완료!') : '시간 초과';
   $('#endTitle').style.color = r.ok ? '#8bdc3a' : '#ff5a3c';
-  $('#endSub').textContent = r.ok ? `${fmtTime(r.time)} 만에 ${fmtMoney(r.got)} 납품` : `납품 ${fmtMoney(r.got)} / 목표 ${fmtMoney(S.quota)}`;
+  $('#endSub').textContent = (r.ok ? `${fmtTime(r.time)} 만에 ${fmtMoney(r.got)} 납품` : `납품 ${fmtMoney(r.got)} / 목표 ${fmtMoney(S.quota)}`) + ` · 철거율 ${r.demo ?? demoPct()}%`;
+  const gr = gradeOf(r);
+  $('#endGrade').textContent = gr.g; $('#endGrade').style.color = gr.c;
   const ids = crewList().map(x => x.id);
   const val = (id, k) => id === myId ? ({ blocks: stats[myId]?.blocks || 0, carried: carried[myId] || 0, yeets: me.yeets, flown: me.flown, smacks: me.smacks, saves: me.saves, downs: me.downs })[k]
     : k === 'carried' ? carried[id] || 0 : stats[id]?.[k] || 0;
