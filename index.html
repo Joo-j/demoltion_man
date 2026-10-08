@@ -2542,7 +2542,8 @@ function spillRubble(cells, p){
   }
 }
 function heldBy(pid){ for (const it of items.values()) if (it.st === 'held' && it.by === pid) return it; return null; }
-function toolOf(pid){ const it = heldBy(pid); return it ? it.id : carriedBy(pid) ? 'person' : (loads['h:' + pid] || []).length ? 'hands' : 'hammer'; }
+// 장비를 든 채 잔해를 주우면 장비는 등에 메고 두 손으로 든다 (던지고 나면 다시 장비)
+function toolOf(pid){ if ((loads['h:' + pid] || []).length) return 'hands'; const it = heldBy(pid); return it ? it.id : carriedBy(pid) ? 'person' : 'hammer'; }
 function loadOf(pid){ return (loads['h:' + pid] || []).length; }
 
 /* ================= 네트워크 ================= */
@@ -2651,7 +2652,9 @@ function applyWorld(m){
   Object.assign(carried, m.carried);
   const prevTool = me.tool;
   me.tool = toolOf(myId);
-  if (me.tool !== prevTool && GEAR_BY[me.tool] && me.tool !== 'hammer') showEquip(me.tool);
+  const gid = heldBy(myId)?.id || null;
+  if (gid && gid !== me.lastGear) showEquip(gid);
+  me.lastGear = gid;
   if (me.tool !== 'sledge') me.charge = -1;
   if (shopOpen) renderShop();
 }
@@ -2940,7 +2943,7 @@ function onHostMsg(m){
     }
     case 'take': {
       if (!toolsAllowed() || taken.has(m.i) || !baseType[m.i] || hp[m.i]) return;
-      if (heldBy(m.from) || loadOf(m.from)) return;
+      if (loadOf(m.from) || carriedBy(m.from) || lift.op === m.from) return;
       loads['h:' + m.from] = [m.i]; taken.add(m.i);
       hostSync();
       break;
@@ -3891,8 +3894,8 @@ function updateInteract(){
     const tg = facingPeer(1.7, .75, (id, p) => !carry[id] && !liftRole(id) && !p.fl);
     if (tg){ inter = { kind: 'grab', target: tg, label: `들기 · ${nameOf(tg)}` }; return; }
   }
-  // 잔해 (개인 망치만 들고 있을 때 — 망치는 허리에 찬다)
-  if (me.tool === 'hammer'){
+  // 잔해 (장비를 들고 있어도 주울 수 있다)
+  if ((me.tool === 'hammer' || own) && !liftRole(myId)){
     const r = findRubble();
     if (r){ inter = { kind: 'rubble', piece: r, label: `잔해 줍기 · ${MATS[r.t].name} $${MATS[r.t].value}` }; return; }
   }
