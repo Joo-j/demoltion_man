@@ -74,29 +74,47 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 #endPanel th:first-child,#endPanel td:first-child{text-align:left}
 #endPanel td{padding:6px;text-align:right;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 #endPanel .again{color:var(--accent);font-weight:700}
-#shop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#05070acc}
-#shop .box{width:min(1000px,94vw);max-height:90vh;overflow:auto;padding:22px 24px 18px}
-#shop header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-#shop h2{font-size:24px;flex:1}
-.shopMoney{font-size:26px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+#shop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#10131acc,#05070af2)}
+.shopWrap{width:min(1120px,96vw);height:min(660px,92vh);display:flex;flex-direction:column}
+.shopTop{display:flex;align-items:center;gap:18px;padding:0 4px 14px;border-bottom:2px solid #ffffff14}
+.shopTop h2{font-size:28px;font-weight:900;letter-spacing:-.5px;flex:1}
+.shopMoney{font-size:30px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
 .close{padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;font-size:13px}
 .close:hover{border-color:var(--accent)}
-.cols{display:grid;grid-template-columns:1fr 1.2fr;gap:20px}
-.colTitle{font-size:11px;letter-spacing:2px;color:var(--dim);font-weight:700;margin-bottom:8px}
-.item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;background:#ffffff07}
-.item.owned{border-color:#ffffff22}
-.item .key{width:26px;height:26px;border-radius:7px;background:#ffffff14;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
-.item .info{flex:1;min-width:0}
-.item .nm{font-weight:800;font-size:14.5px}
-.item .ds{font-size:12px;color:var(--dim);margin-top:2px;line-height:1.45}
-.pips{display:flex;gap:3px;margin-top:6px}
-.pip{width:18px;height:5px;border-radius:2px;background:#ffffff22}
+.shopBody{flex:1;display:grid;grid-template-columns:150px 1fr 310px;gap:16px;padding-top:16px;min-height:0}
+.shopTabs{display:flex;flex-direction:column;gap:6px}
+.tab{position:relative;padding:14px 16px;border-radius:10px;background:#ffffff08;border:1px solid transparent;color:var(--dim);font-weight:800;font-size:15px;text-align:left;cursor:pointer;font-family:inherit}
+.tab:hover{background:#ffffff12;color:var(--text)}
+.tab.on{background:#ff8a1f1f;border-color:var(--accent);color:var(--text)}
+.tab .dotNew{position:absolute;right:10px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--gold)}
+.shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start;overflow:auto;padding-right:4px}
+.tile{position:relative;height:178px;border-radius:12px;background:linear-gradient(180deg,#1b2029,#12151b);border:2px solid #ffffff10;cursor:pointer;overflow:hidden;display:flex;flex-direction:column}
+.tile:hover{border-color:#ffffff40}
+.tile.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 24px #0009}
+.tile .ic{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.tile .ic img{width:118px;height:118px;object-fit:contain;filter:drop-shadow(0 6px 10px #0009)}
+.tile .glyph{font-size:34px;font-weight:900;color:var(--gold)}
+.tile .tn{padding:0 10px;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .tp{padding:2px 10px 10px;font-weight:900;font-size:14px;color:var(--gold);font-variant-numeric:tabular-nums}
+.tile .tp.no{color:#ff6b55}
+.tile .tp.own{color:#8bdc3a}
+.tile .tp.lock{color:var(--dim)}
+.tile.locked .ic img,.tile.locked .glyph{opacity:.3;filter:grayscale(1)}
+.tile .lv{position:absolute;right:8px;top:8px;font-size:11px;font-weight:800;color:var(--dim)}
+.shopDetail{border-radius:14px;background:#12151bee;border:1px solid #ffffff14;padding:18px;display:flex;flex-direction:column}
+.shopDetail .big{height:190px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:radial-gradient(circle at 50% 60%,#2a3240,#12151b)}
+.shopDetail .big img{width:180px;height:180px;object-fit:contain}
+.shopDetail .big .glyph{font-size:56px;font-weight:900;color:var(--gold)}
+.shopDetail h3{font-size:22px;margin:14px 0 4px}
+.shopDetail .ds{color:#c9c5bc;font-size:13.5px;line-height:1.5;flex:1}
+.shopDetail .state{font-size:12px;color:var(--dim);margin-bottom:8px}
+.pips{display:flex;gap:4px;margin:6px 0 12px}
+.pip{flex:1;height:6px;border-radius:3px;background:#ffffff22}
 .pip.on{background:var(--accent)}
-.buy{min-width:100px;padding:9px 10px;border:0;border-radius:8px;background:var(--accent);color:#16110a;font-weight:800;cursor:pointer;font-family:inherit;font-size:13px;font-variant-numeric:tabular-nums}
+.buy{width:100%;padding:13px 10px;margin-top:6px;border:0;border-radius:10px;background:var(--accent);color:#16110a;font-weight:900;cursor:pointer;font-family:inherit;font-size:16px;font-variant-numeric:tabular-nums}
 .buy:hover{filter:brightness(1.1)}
-.btns{display:flex;flex-direction:column;gap:5px}
-.buy:disabled{background:#ffffff14;color:var(--dim);cursor:default;filter:none}
-.shopNote{margin-top:10px;font-size:12px;color:var(--dim)}
+.buy.sub{background:#ffffff14;color:var(--text);font-size:14px;padding:10px}
+.buy:disabled{background:#ffffff10;color:var(--dim);cursor:default;filter:none}
 #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,#2a2f38cc,#0b0d10f2)}
 #lobby .stripe{position:absolute;left:0;right:0;top:0;height:14px;background:repeating-linear-gradient(-45deg,#f2c21b 0 22px,#16181c 22px 44px)}
 #lobby .stripe.b{top:auto;bottom:0}
@@ -111,12 +129,17 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 .card .roomRow button{width:auto;margin:0;padding:8px 16px;font-size:13px}
 .roomEmpty{padding:16px;text-align:center;color:var(--dim);font-size:13px}
 .card button.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-size:14px}
-#waitRoom{position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:18px 20px;width:260px;pointer-events:auto}
-#waitRoom h3{font-size:19px;margin-bottom:2px}
-#waitRoom .sub{color:var(--dim);font-size:12.5px;margin-bottom:10px;line-height:1.5}
-#waitRoom .plist{margin-bottom:12px}
-#waitRoom button{display:block;width:100%;padding:11px;border:0;border-radius:10px;background:var(--accent);color:#16110a;font-weight:800;font-size:16px;cursor:pointer;font-family:inherit}
-#waitRoom button.leave{background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:600;margin-top:8px;padding:7px}
+.roomHead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.roomHead b{font-size:18px}
+.roomHead span{color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums}
+.players{border:1px solid var(--line);border-radius:10px;background:#0d0f13;margin-bottom:10px}
+.pRow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px}
+.pRow:last-child{border-bottom:0}
+.pRow .nm{flex:1}
+.pRow.empty{color:#ffffff33}
+.waitMsg{text-align:center;color:var(--dim);font-size:13px;padding:12px 0 4px}
+#itemTags{position:absolute;inset:0;overflow:hidden}
+.itemTag{position:absolute;left:0;top:0;padding:4px 10px;border-radius:8px;background:#ffd23f;color:#16110a;font-weight:900;font-size:13px;white-space:nowrap;box-shadow:0 4px 14px #0008}
 .card{width:460px;padding:30px 32px;background:#15181dee;border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px #000a}
 .card h1{font-size:44px;font-weight:900;letter-spacing:-1px}
 .card h1 span{color:var(--accent)}
@@ -186,7 +209,7 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
   <div id="center"></div>
   <div id="hint" class="panel hidden"></div>
   <div id="interact" class="hidden"></div>
-  <div id="waitRoom" class="panel hidden"></div>
+  <div id="itemTags"></div>
   <div id="truckTag" class="panel hidden"></div>
   <div id="hands" class="panel"></div>
   <div id="money" class="panel"><small>팀 자금</small><span id="moneyVal">$0</span><div id="truckInfo"></div><button id="shopBtn">상점 열기 <kbd>B</kbd></button><div id="shopAlert" class="hidden">새 장비 구매 가능</div></div>
@@ -200,13 +223,13 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
 </div>
 
 <div id="shop" class="hidden">
-  <div class="box panel">
-    <header><h2>장비 상점</h2><div class="shopMoney" id="shopMoney">$0</div><button class="close" id="shopClose">닫기 (B)</button></header>
-    <div class="cols">
-      <div><div class="colTitle">장비</div><div id="gearList"></div></div>
-      <div><div class="colTitle">업그레이드</div><div id="upList"></div></div>
+  <div class="shopWrap">
+    <div class="shopTop"><h2>상점</h2><div class="shopMoney" id="shopMoney">$0</div><button class="close" id="shopClose">닫기 <kbd>B</kbd></button></div>
+    <div class="shopBody">
+      <div class="shopTabs" id="shopTabs"></div>
+      <div class="shopGrid" id="shopGrid"></div>
+      <div class="shopDetail" id="shopDetail"></div>
     </div>
-    <p class="shopNote">상점을 열어 둔 동안에도 게임은 계속 진행됩니다. 장비와 업그레이드는 다음 스테이지로 이어집니다.</p>
   </div>
 </div>
 
@@ -215,11 +238,14 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
   <div class="card">
     <h1>철거<span>반</span></h1>
     <div class="sub">DEMOLITION CREW</div>
-    <label>이름<input id="inName" maxlength="10" autocomplete="off"></label>
-    <div class="netStatus" id="netStatus">서버 연결 중…</div>
-    <div class="roomList" id="roomList"><div class="roomEmpty">불러오는 중…</div></div>
-    <button id="btnCreate" disabled>방 만들기</button>
-    <button id="btnLocal" class="ghost hidden">서버 없이 하기</button>
+    <div id="lobbyView">
+      <label>이름<input id="inName" maxlength="10" autocomplete="off"></label>
+      <div class="netStatus" id="netStatus">서버 연결 중…</div>
+      <div class="roomList" id="roomList"><div class="roomEmpty">불러오는 중…</div></div>
+      <button id="btnCreate" disabled>방 만들기</button>
+      <button id="btnLocal" class="ghost hidden">서버 없이 하기</button>
+    </div>
+    <div id="roomView" class="hidden"></div>
   </div>
 </div>
 <div id="err" class="hidden">WebGL을 시작하지 못했습니다.</div>
@@ -263,15 +289,20 @@ const MATS = [null,
   { name: '콘크리트', hp: 4, structural: true, span: 5, density: 1.2, value: 8, dust: [.78, .77, .74] },
   { name: '철근 기둥', hp: 8, structural: true, span: 3, density: 1.5, value: 25, dust: [.7, .71, .72], coop: true },
   { name: '강화 코어', hp: 14, structural: true, span: 4, density: 1.7, value: 40, dust: [.6, .6, .62], coop: true },
+  { name: '나무 칸막이', hp: 1, structural: false, span: 2, density: .5, value: 2, dust: [.66, .54, .4] },
+  { name: '구리 배관', hp: 1, structural: false, span: 1, density: 1.6, value: 30, dust: [.82, .56, .36] },
+  { name: '가스통', hp: 1, structural: false, span: 0, density: .8, value: 0, dust: [.9, .45, .35], gas: true },
+  { name: '금고', hp: 10, structural: false, span: 0, density: 3, value: 150, dust: [.42, .46, .42], coop: true },
 ];
+const T_WOOD = 6, T_COPPER = 7, T_GAS = 8, T_SAFE = 9;
 const NT = MATS.length;
 // 스테이지마다 모양이 다른 건물. shape(x, z) → { floors, kind } (없으면 빈 땅). 층마다 벽 3칸 + 슬래브 1칸.
 const STAGES = [
-  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2000, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10],
+  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2000, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10], safes: 1,
     shape: (x, z) => (x < 7 || z < 6) ? { floors: 2, kind: 'shop' } : null },
-  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 3500, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8],
+  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 3000, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8], safes: 2,
     shape: (x, z) => (x >= 16 && x <= 18 && z >= 7 && z <= 9) ? { floors: 6, kind: 'chimney' } : (x < 15 && z < 10) ? { floors: 2, kind: 'factory' } : null },
-  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 8000, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6],
+  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 6000, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6], safes: 3,
     shape: (x, z) => (x >= 3 && x <= 8 && z <= 5) ? { floors: 7, kind: 'tower' } : (x >= 1 && x <= 10 && z >= 4) ? { floors: 3, kind: 'nave' } : null },
 ];
 let curStage = 0, W = 1, D = 1, H = 1, LAYER = 1, N = 1, OX = 0, OZ = 0, QUOTA = 600, ROUND_SEC = 300;
@@ -317,9 +348,25 @@ function genStage(n){
         if (z === 0 && y < 2 && S.door.includes(x)) t = 0;
         if (z === 0 && y === 2 && S.door.includes(x)) t = 1;
       }
+      // 건물 안 (벽·기둥·슬래브가 아닌 빈칸)
+      if (!t && !per && y < top[k] && ly < 3 && kd !== 'chimney'){
+        const part = kd === 'shop' ? x === 7 && z < 6 : kd === 'factory' ? (x === 5 || x === 10) : kd === 'nave' ? z === 10 : false;
+        const gap = ly < 2 && (kd === 'nave' ? x % 4 === 2 : z % 4 === 2);
+        if (part && !gap) t = T_WOOD;
+        else if (!exposedAt(x, z + 1, y) && exposedAt(x, z + 2, y) && x % 3 === 1) t = T_COPPER;
+        else if (ly === 0 && hash1(x * 31 + z * 17 + y * 7 + n * 101) < .045) t = T_GAS;
+      }
       baseType[x + z * W + y * LAYER] = t;
     }
   }
+  // 금고: 1층 안쪽 빈칸 중 몇 곳 (문에서 먼 쪽)
+  const spots = [];
+  for (let z = 2; z < D; z++) for (let x = 0; x < W; x++){
+    const k = x + z * W;
+    if (kind[k] && kind[k] !== 'chimney' && !baseType[k] && !exposedAt(x - 1, z, 0) && !exposedAt(x + 1, z, 0) && !exposedAt(x, z - 1, 0) && !exposedAt(x, z + 1, 0)) spots.push(k);
+  }
+  spots.sort((a, b) => hash1(a * 13 + n) - hash1(b * 13 + n));
+  for (let s = 0; s < Math.min(S.safes, spots.length); s++) baseType[spots[s]] = T_SAFE;
   hpTab = MATS.map((m, t) => m ? Math.round(m.hp * (m.coop ? S.coopMul : t === 3 ? S.slabMul : 1)) : 0);
   TOTAL = 0; typeCount.fill(0);
   for (let i = 0; i < N; i++) if (baseType[i]){ TOTAL++; typeCount[baseType[i]]++; }
@@ -523,6 +570,47 @@ const coreTex = (() => {
   return toTex(c);
 })();
 // 균열: 밝은 값일수록 먼저 드러난다(손상도 0→1)
+const woodTex = (() => {
+  const s = 256, [c, g] = makeCanvas(s);
+  for (let r = 0; r < 4; r++){
+    g.fillStyle = `hsl(${rand(26, 34)},${rand(38, 48)}%,${rand(38, 48)}%)`; g.fillRect(0, r * 64, s, 64);
+    g.strokeStyle = 'rgba(60,35,15,.35)'; g.lineWidth = 1;
+    for (let k = 0; k < 9; k++){ g.beginPath(); const y = r * 64 + rand(6, 58); g.moveTo(0, y); g.bezierCurveTo(80, y + rand(-6, 6), 170, y + rand(-6, 6), s, y + rand(-4, 4)); g.stroke(); }
+    g.fillStyle = 'rgba(30,18,8,.55)'; g.fillRect(0, r * 64 + 62, s, 3);
+  }
+  speckle(g, s, 1200, false, .15);
+  return toTex(c);
+})();
+const copperTex = (() => {
+  const s = 128, [c, g] = makeCanvas(s);
+  const gr = g.createLinearGradient(0, 0, s, 0);
+  gr.addColorStop(0, '#6e3a1c'); gr.addColorStop(.35, '#d98a4e'); gr.addColorStop(.55, '#f2b07a'); gr.addColorStop(1, '#7a4220');
+  g.fillStyle = gr; g.fillRect(0, 0, s, s);
+  g.fillStyle = 'rgba(40,20,10,.5)'; g.fillRect(0, 54, s, 8);
+  stains(g, s, 4, .18); speckle(g, s, 400, false, .15);
+  return toTex(c);
+})();
+const gasTex = (() => {
+  const s = 128, [c, g] = makeCanvas(s);
+  g.fillStyle = '#c8261b'; g.fillRect(0, 0, s, s);
+  g.fillStyle = '#f2efe6'; g.fillRect(0, 44, s, 40);
+  g.fillStyle = '#1a1a1a'; g.font = 'bold 22px sans-serif'; g.textAlign = 'center'; g.fillText('LPG', s / 2, 72);
+  hazardBand(g, s, 100, 118, '#f2c21b', '#1a1a1a');
+  speckle(g, s, 500, false, .2);
+  return toTex(c);
+})();
+const safeTex = (() => {
+  const s = 256, [c, g] = makeCanvas(s);
+  g.fillStyle = '#3f4a43'; g.fillRect(0, 0, s, s);
+  stains(g, s, 5, .15); speckle(g, s, 2000, false, .15);
+  g.strokeStyle = '#2a312c'; g.lineWidth = 10; g.strokeRect(18, 18, s - 36, s - 36);
+  g.fillStyle = '#c9a64a'; g.beginPath(); g.arc(s / 2, s / 2, 38, 0, 7); g.fill();
+  g.fillStyle = '#2a312c'; g.beginPath(); g.arc(s / 2, s / 2, 26, 0, 7); g.fill();
+  g.strokeStyle = '#c9a64a'; g.lineWidth = 5; g.beginPath(); g.moveTo(s / 2, s / 2); g.lineTo(s / 2 + 20, s / 2 - 12); g.stroke();
+  g.fillStyle = '#20251f';
+  for (const [x, y] of [[34, 34], [222, 34], [34, 222], [222, 222]]){ g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); }
+  return toTex(c);
+})();
 const crackTex = (() => {
   const s = 256, [c, g] = makeCanvas(s);
   g.fillStyle = '#000'; g.fillRect(0, 0, s, s);
@@ -608,12 +696,20 @@ const MAT_INTACT = [null,
   crackify(new THREE.MeshStandardMaterial({ map: concreteTex, roughness: .95 })),
   crackify(new THREE.MeshStandardMaterial({ map: pillarTex, roughness: .82, metalness: .05 })),
   crackify(new THREE.MeshStandardMaterial({ map: coreTex, roughness: .78, metalness: .1 })),
+  crackify(new THREE.MeshStandardMaterial({ map: woodTex, roughness: .85 })),
+  new THREE.MeshStandardMaterial({ map: copperTex, roughness: .3, metalness: .85 }),
+  new THREE.MeshStandardMaterial({ map: gasTex, roughness: .4, metalness: .3, emissive: 0x220000 }),
+  crackify(new THREE.MeshStandardMaterial({ map: safeTex, roughness: .4, metalness: .6 })),
 ];
 const MAT_DEBRIS = [null, null,
   new THREE.MeshStandardMaterial({ map: brickTex, roughness: .95 }),
   new THREE.MeshStandardMaterial({ map: concreteTex, roughness: .97 }),
   new THREE.MeshStandardMaterial({ map: pillarTex, roughness: .88 }),
   new THREE.MeshStandardMaterial({ map: coreTex, roughness: .85 }),
+  new THREE.MeshStandardMaterial({ map: woodTex, roughness: .9 }),
+  new THREE.MeshStandardMaterial({ map: copperTex, roughness: .35, metalness: .8 }),
+  new THREE.MeshStandardMaterial({ map: gasTex, roughness: .5 }),
+  new THREE.MeshStandardMaterial({ map: safeTex, roughness: .45, metalness: .6 }),
 ];
 // 잔해용 울퉁불퉁한 상자 (같은 자리 꼭짓점은 같은 만큼 움직여 틈이 생기지 않게)
 function rockGeo(seed, amt){
@@ -656,7 +752,11 @@ function setCellMatrix(i, sh){
   if (t === 1){
     const z = ((i / W) | 0) % D;
     if (z === 0 || z === D - 1) _s.set(1, 1, .1); else _s.set(.1, 1, 1);
-  } else _s.set(1, 1, 1);
+  } else if (t === T_COPPER) _s.set(.32, 1, .32);
+  else if (t === T_GAS) _s.set(.62, .92, .62);
+  else if (t === T_WOOD) _s.set(1, 1, .3);
+  else if (t === T_SAFE) _s.set(.9, .9, .9);
+  else _s.set(1, 1, 1);
   _m.compose(_v, _q0.identity(), _s);
   intactMesh[t].setMatrixAt(cellSlot[i], _m);
 }
@@ -930,7 +1030,7 @@ function updateChips(dt){
   chipMesh.instanceMatrix.needsUpdate = true;
   chipMesh.instanceColor.needsUpdate = true;
 }
-const CHIP_COL = [null, [.8, .92, 1], [.62, .3, .22], [.68, .66, .62], [.5, .52, .55], [.42, .43, .46]];
+const CHIP_COL = [null, [.8, .92, 1], [.62, .3, .22], [.68, .66, .62], [.5, .52, .55], [.42, .43, .46], [.6, .45, .3], [.85, .52, .3], [.8, .2, .15], [.3, .36, .32]];
 function chipsAt(x, y, z, t, n, power, dir){
   const c = CHIP_COL[t];
   for (let k = 0; k < n; k++){
@@ -1741,8 +1841,8 @@ function addDyn(id, owner, p, v, kind = 'dyn', pw = null){
   dynMap.set(id, d);
   return d;
 }
-function stickDyn(d, p, n, cell){
-  d.stuck = true; d.cell = cell; d.vel.set(0, 0, 0);
+function stickDyn(d, p, n, cell, pid){
+  d.stuck = true; d.cell = cell; d.vel.set(0, 0, 0); d.attach = pid || null;
   d.pos.set(p[0], p[1], p[2]);
   d.mesh.position.copy(d.pos);
   d.mesh.quaternion.setFromUnitVectors(_a.set(0, 1, 0), _b.set(n[0], n[1], n[2]));
@@ -1753,9 +1853,29 @@ function removeDyn(id){
   scene.remove(d.mesh);
   dynMap.delete(id);
 }
+// 사람 몸에 붙은 폭약은 그 사람을 따라다닌다
+function attachedPos(pid){ return pid === myId ? (joined ? me.pos : null) : (peers.get(pid)?.pos || null); }
 function updateDyns(dt){
   for (const d of dynMap.values()){
+    if (d.attach){
+      const ap = attachedPos(d.attach);
+      if (ap){ d.pos.set(ap.x, ap.y + 1.25, ap.z); d.mesh.position.copy(d.pos); }
+      else { d.attach = null; d.stuck = false; }
+    }
     if (d.stuck && d.cell >= 0 && !hp[d.cell]){ d.stuck = false; d.cell = -1; }
+    if (!d.stuck && d.owner === myId && d.kind === 'c4'){
+      for (const [pid, p] of peers){
+        if (!p.av) continue;
+        if (Math.hypot(d.pos.x - p.pos.x, d.pos.z - p.pos.z) < .55 && d.pos.y > p.pos.y + .2 && d.pos.y < p.pos.y + 1.95){
+          const pp = [p.pos.x, p.pos.y + 1.25, p.pos.z];
+          stickDyn(d, pp, [0, 1, 0], -1, pid);
+          send({ t: 'stick', id: d.id, p: pp, n: [0, 1, 0], i: -1, pid });
+          toast(`${nameOf(pid)}에게 C4 부착!`, 2000, 'c4');
+          sfx('beep', d.pos);
+          break;
+        }
+      }
+    }
     if (!d.stuck){
       const prev = _a.copy(d.pos);
       d.vel.y -= DGRAV * dt;
@@ -1925,8 +2045,9 @@ const GEAR = [
   { id: 'grenade', name: '충격탄 상자', type: 'throw', price: 250, start: 4, pack: { n: 4, price: 80 }, desc: '닿으면 바로 폭발 · 기둥 피해 없음' },
   { id: 'jack', name: '착암기', type: 'hold', price: 500, desc: '누르고 있으면 연속 타격' },
   { id: 'cutter', name: '절단기', type: 'hold', price: 700, desc: '기둥을 혼자 절단' },
-  { id: 'c4', name: 'C4 가방', type: 'throw', price: 900, start: 2, pack: { n: 1, price: 150 }, desc: '기둥에 큰 피해 · 우클릭 기폭' },
+  { id: 'c4', name: 'C4 가방', type: 'throw', price: 900, start: 2, pack: { n: 1, price: 150 }, desc: '기둥에 큰 피해 · 사람에게도 붙음 · 우클릭 기폭' },
   { id: 'thermite', name: '테르밋 상자', type: 'throw', price: 1100, start: 2, pack: { n: 1, price: 140 }, desc: '붙은 자리부터 아래로 녹임' },
+  { id: 'lift', name: '고소 크레인', type: 'vehicle', price: 900, desc: '한 명은 조종, 한 명은 바구니에서 높은 곳을 부숨' },
   { id: 'crane', name: '레킹볼 리모컨', type: 'crane', price: 1800, desc: '쇠공으로 한 줄 관통' },
 ];
 // 모두가 기본으로 들고 있는 개인 망치 (테이블·상점에는 없다)
@@ -2029,14 +2150,76 @@ let truckPile = null;
   scene.add(truckGroup);
 }
 function placeSite(){
+  liftPos.set(OX - 4.6, 0, OZ + 3);
+  liftGroup.position.copy(liftPos);
   tablePos.set(-9, 0, OZ - 8.5);
   truckPos.set(0, 0, OZ - 13);
   tableGroup.position.copy(tablePos);
   truckGroup.position.copy(truckPos);
 }
+/* ================= 고소 크레인 ================= */
+// 새로 들어온 장비 위에 세우는 빛기둥
+const beaconGeo = new THREE.CylinderGeometry(.22, .35, 9, 16, 1, true);
+beaconGeo.translate(0, 4.5, 0);
+// 한 명은 뒤쪽 조종석에서 붐을 움직이고, 한 명은 바구니에 타서 높은 곳을 부순다
+const lift = { op: null, rider: null };
+const liftPose = { yaw: 0, pitch: .12, ext: 0 }, liftView = { yaw: 0, pitch: .12, ext: 0 };
+const liftPos = new V3();
+let liftFresh = false;
+const liftGroup = new THREE.Group(), liftTurret = new THREE.Group(), liftBasket = new THREE.Group();
+const liftBoom = new THREE.Mesh(new THREE.BoxGeometry(.32, .32, 1), new THREE.MeshStandardMaterial({ color: 0xe6b012, roughness: .45, metalness: .3 }));
+const liftBeacon = new THREE.Mesh(beaconGeo, new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+{
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xe6b012, roughness: .5, metalness: .25 });
+  const box = (par, w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  box(liftGroup, 3.0, .7, 2.0, yellow, 0, .75, 0);
+  const wheel = new THREE.CylinderGeometry(.42, .42, .3, 16);
+  for (const [x, z] of [[-1, -1.05], [1, -1.05], [-1, 1.05], [1, 1.05]]){ const w = new THREE.Mesh(wheel, blackMat2); w.rotation.x = Math.PI / 2; w.position.set(x, .42, z); w.castShadow = true; liftGroup.add(w); }
+  box(liftGroup, .5, 1.0, .7, new THREE.MeshStandardMaterial({ color: 0x30343a, roughness: .5 }), -1.6, 1.0, 0);
+  box(liftTurret, .9, .5, .9, yellow, 0, 1.35, 0);
+  liftGroup.add(liftTurret);
+  liftBoom.castShadow = true;
+  scene.add(liftBoom);
+  const rail = new THREE.MeshStandardMaterial({ color: 0x9aa1a8, metalness: .6, roughness: .4 });
+  box(liftBasket, 1.3, .08, 1.3, rail, 0, 0, 0);
+  for (const [x, z, w, d] of [[0, -.62, 1.3, .05], [0, .62, 1.3, .05], [-.62, 0, .05, 1.3], [.62, 0, .05, 1.3]]) box(liftBasket, w, .06, d, rail, x, 1.0, z);
+  for (const [x, z] of [[-.62, -.62], [.62, -.62], [-.62, .62], [.62, .62]]) box(liftBasket, .05, 1.0, .05, rail, x, .5, z);
+  scene.add(liftBasket);
+  scene.add(liftGroup);
+  liftBeacon.visible = false;
+  scene.add(liftBeacon);
+}
+const liftPanel = out => out.set(liftPos.x - 1.6, 0, liftPos.z);
+function liftTip(out, pose){
+  const L = 4 + pose.ext, cp = Math.cos(pose.pitch);
+  return out.set(liftPos.x + Math.cos(pose.yaw) * cp * L, 1.9 + Math.sin(pose.pitch) * L, liftPos.z - Math.sin(pose.yaw) * cp * L);
+}
+const liftRole = pid => lift.op === pid ? 'op' : lift.rider === pid ? 'rider' : null;
+function updateLift(dt){
+  const has = !!team.owned.lift;
+  liftGroup.visible = liftBoom.visible = liftBasket.visible = has;
+  if (!has) return;
+  const k = lift.op === myId ? 1 : 1 - Math.exp(-dt * 10);
+  for (const key of ['yaw', 'pitch', 'ext']) liftView[key] = lerp(liftView[key], liftPose[key], k);
+  liftTurret.rotation.y = liftView.yaw;
+  const pv = _a.set(liftPos.x, 1.9, liftPos.z), tip = liftTip(_b, liftView);
+  liftBoom.position.copy(pv).add(tip).multiplyScalar(.5);
+  liftBoom.scale.set(1, 1, pv.distanceTo(tip));
+  liftBoom.lookAt(tip);
+  liftBasket.position.set(tip.x, tip.y - .9, tip.z);
+  liftBasket.rotation.y = liftView.yaw;
+  if (lift.op || lift.rider) liftFresh = false;
+  liftBeacon.visible = liftFresh;
+  if (liftFresh){ liftPanel(liftBeacon.position); liftBeacon.material.opacity = .22 + .12 * Math.sin(now * 4); }
+}
 function slotPos(k, out){ return out.set(tablePos.x - 2.3 + (k % 6) * .92, 1.0, tablePos.z + (k < 6 ? -.45 : .45)); }
 // 바닥·테이블에 놓인 장비 모형
 function makeItemMesh(id){
+  const g = makeItemModel(id);
+  scene.add(g);
+  return g;
+}
+function makeItemModel(id){
   const g = new THREE.Group(), add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
   const tr = (w, h, d, c) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: c, roughness: .6 }));
   if (id === 'hammer' || id === 'sledge'){
@@ -2055,11 +2238,18 @@ function makeItemMesh(id){
     const b = tr(.42, .22, .3, col); b.position.y = .11; b.castShadow = true; g.add(b);
     const lab = tr(.2, .02, .16, { dyn: 0xc8261b, grenade: 0xd8d36a, c4: 0xd9d4c4, thermite: 0xff7a1a }[id]); lab.position.y = .23; g.add(lab);
   }
-  scene.add(g);
   return g;
 }
+// 새로 산 장비: 누가 집을 때까지 빛기둥과 NEW 표시
+const freshIds = new Set();
 function placeItemMesh(it){
   if (!it.mesh) it.mesh = makeItemMesh(it.id);
+  if (it.st === 'held') freshIds.delete(it.id);
+  const fresh = freshIds.has(it.id);
+  if (fresh && !it.beacon){
+    it.beacon = new THREE.Mesh(beaconGeo, new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    scene.add(it.beacon);
+  } else if (!fresh && it.beacon){ scene.remove(it.beacon); it.beacon.material.dispose(); it.beacon = null; }
   it.mesh.visible = it.st !== 'held';
   if (it.st === 'table'){
     slotPos(GEAR.findIndex(g => g.id === it.id), it.mesh.position);
@@ -2067,6 +2257,22 @@ function placeItemMesh(it){
   } else if (it.st === 'ground'){
     it.mesh.position.set(it.p[0], .02, it.p[2]);
     it.mesh.rotation.y = it.p[3] || 0;
+  }
+  if (it.beacon) it.beacon.position.copy(it.mesh.position);
+}
+const itemTagEls = new Map();
+function updateItemTags(){
+  const box = $('#itemTags');
+  for (const [id, el] of itemTagEls) if (!freshIds.has(id) || !items.get(id)){ el.remove(); itemTagEls.delete(id); }
+  for (const id of freshIds){
+    const it = items.get(id);
+    if (!it || !it.mesh) continue;
+    let el = itemTagEls.get(id);
+    if (!el){ el = document.createElement('div'); el.className = 'itemTag'; el.textContent = `NEW · ${GEAR_BY[id].name}`; box.appendChild(el); itemTagEls.set(id, el); }
+    _v.copy(it.mesh.position); _v.y += 1.1; _v.project(camera);
+    el.style.display = _v.z < 1 ? '' : 'none';
+    el.style.transform = `translate(${(_v.x * .5 + .5) * innerWidth}px,${(-_v.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+    if (it.beacon) it.beacon.material.opacity = .22 + .12 * Math.sin(now * 4);
   }
 }
 function updateTruckVisual(){
@@ -2172,7 +2378,7 @@ function stat(id){
 }
 function worldMsg(){
   return { t: 'world', team: { ...team }, items: [...items.values()].map(it => ({ id: it.id, st: it.st, by: it.by, p: it.p })),
-    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried } };
+    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried }, lift: { ...lift, pose: { ...liftPose } } };
 }
 function hostSync(){ broadcast(worldMsg()); }
 function applyWorld(m){
@@ -2187,6 +2393,12 @@ function applyWorld(m){
   }
   for (const [id, it] of items) if (!seen.has(id)){ if (it.mesh) scene.remove(it.mesh); items.delete(id); }
   Object.assign(truck, m.truck);
+  if (m.lift){
+    const wasRider = lift.rider === myId;
+    lift.op = m.lift.op; lift.rider = m.lift.rider;
+    if (lift.op !== myId) Object.assign(liftPose, m.lift.pose);
+    if (wasRider && lift.rider !== myId) me.vel.set(0, 0, 0);
+  }
   loads = m.loads || {};
   const nt = new Set(m.taken), fresh = new Set();
   for (const i of nt) if (!shownTaken.has(i)) fresh.add(i);
@@ -2209,7 +2421,7 @@ function onMsg(m){
     case 'hello':
       sendState();
       if (amHost()) send({ t: 'snap', to: m.from, hp: Array.from(hp), phase: { ...phase }, stats, world: worldMsg(),
-        dyns: [...dynMap.values()].filter(d => d.stuck).map(d => ({ id: d.id, owner: d.owner, kind: d.kind, pw: d.pw, p: d.pos.toArray(), i: d.cell, fuse: d.fuse })) });
+        dyns: [...dynMap.values()].filter(d => d.stuck).map(d => ({ id: d.id, owner: d.owner, kind: d.kind, pw: d.pw, p: d.pos.toArray(), i: d.cell, fuse: d.fuse, attach: d.attach })) });
       break;
     case 'st': {
       let p = peers.get(m.from);
@@ -2260,7 +2472,11 @@ function onMsg(m){
       const mo = $('#money'); mo.classList.remove('bump'); void mo.offsetWidth; mo.classList.add('bump');
       break;
     }
-    case 'bought': if (m.from !== myId) toast(`${nameOf(m.from)} 님이 ${m.label} 구매`, 2000); break;
+    case 'bought':
+      if (m.gid && GEAR_BY[m.gid].type === 'vehicle'){ liftFresh = true; toast(`${m.label} → 건물 옆`, 3500, 'buy' + m.gid); sfx('buy'); }
+      else if (m.gid){ freshIds.add(m.gid); toast(`${m.label} → 공구 테이블`, 3500, 'buy' + m.gid); sfx('buy'); }
+      else if (m.from !== myId) toast(`${nameOf(m.from)} · ${m.label}`, 2000);
+      break;
     case 'smacked':
       if (m.target === myId){
         _b.copy(me.pos).sub(peers.get(m.from)?.pos || me.pos).setY(0);
@@ -2273,19 +2489,24 @@ function onMsg(m){
       break;
     case 'stick': {
       const d = dynMap.get(m.id) || addDyn(m.id, m.from, m.p, null);
-      stickDyn(d, m.p, m.n, m.i);
+      stickDyn(d, m.p, m.n, m.i, m.pid);
+      if (m.pid === myId){ toast('C4가 등에 붙었다!', 3000, 'c4'); sfx('beep', me.pos); }
       break;
     }
     case 'fuse':
       for (const id of m.ids){ const d = dynMap.get(id); if (d) d.fuse = true; }
       if (m.owner !== myId) toast(`${nameOf(m.owner)} 님이 기폭했습니다!`);
       break;
-    case 'boom':
+    case 'boom': {
+      const onMe = dynMap.get(m.id)?.attach === myId;
       removeDyn(m.id);
+      if (onMe){ me.down = 0; knock(new V3(rand(-5, 5), 14, rand(-5, 5)), 2.8, '펑! 자폭 철거'); }
       if (m.kind === 'thermite'){ const q = new V3(...m.p); puff(q.x, q.y, q.z, [.35, .33, .3], 10, .4, 1.2, 3, 1.2); }
       else fxExplosion(new V3(...m.p), m.kind === 'c4' ? .8 : m.kind === 'grenade' ? .55 : 1);
       break;
+    }
     case 'crane': addStrike(m); break;
+    case 'lp': if (lift.op !== myId){ liftPose.yaw = m.yaw; liftPose.pitch = m.pitch; liftPose.ext = m.ext; } break;
     case 'reset': resetWorld(m.stage); break;
     case 'phase':
       Object.assign(phase, m.phase);
@@ -2305,6 +2526,8 @@ function dropPeer(id){
     const it = heldBy(id);
     if (it){ it.st = 'ground'; it.p = [p.pos.x, 0, p.pos.z, 0]; }
     delete loads['h:' + id];
+    if (lift.op === id) lift.op = null;
+    if (lift.rider === id) lift.rider = null;
     hostSync();
   }
 }
@@ -2420,6 +2643,14 @@ function onHostMsg(m){
       broadcast({ t: 'crane', id: m.from + ':' + serverNow(), by: m.from, p: m.p, d: m.d, at: serverNow() + CRANE_WARN });
       hostSync();
       break;
+    case 'lift': {
+      if (!team.owned.lift || !toolsAllowed()) return;
+      if (m.act === 'op' && !lift.op && lift.rider !== m.from) lift.op = m.from;
+      else if (m.act === 'ride' && !lift.rider && lift.op !== m.from) lift.rider = m.from;
+      else if (m.act === 'leave'){ if (lift.op === m.from) lift.op = null; if (lift.rider === m.from) lift.rider = null; }
+      hostSync();
+      break;
+    }
     case 'grab': {
       const it = items.get(m.g);
       if (!it || it.st === 'held') return;
@@ -2468,8 +2699,8 @@ function onHostMsg(m){
         if (!g || team.owned[g.id] || team.money < g.price || (g.unlock && curStage < g.unlock)) return;
         team.money -= g.price; team.owned[g.id] = true;
         if (g.start) team.ch[g.id] = (team.ch[g.id] || 0) + g.start;
-        items.set(g.id, { id: g.id, st: 'table' });
-        broadcast({ t: 'bought', label: g.name });
+        if (g.type !== 'vehicle') items.set(g.id, { id: g.id, st: 'table' });
+        broadcast({ t: 'bought', label: g.name, gid: g.id });
       } else if (m.kind === 'pack'){
         const g = GEAR_BY[m.id];
         if (!g || !g.pack || !team.owned[g.id] || team.money < ST.packPrice(g)) return;
@@ -2495,6 +2726,9 @@ function onHostMsg(m){
         for (const i of cells) taken.delete(i);
         broadcast({ t: 'spill', cells, p: [tp.x, tp.y, tp.z] });
       }
+      // 조종하거나 타고 있던 사람은 끌어내려진다
+      if (lift.op === m.target) lift.op = null;
+      if (lift.rider === m.target) lift.rider = null;
       broadcast({ t: 'smacked', target: m.target });
       hostSync();
       break;
@@ -2504,8 +2738,10 @@ function onHostMsg(m){
 function hostExplode(id){
   const d = dynMap.get(id);
   if (!d) return;
-  const p = d.pos.clone(), owner = d.owner, pw = d.pw;
-  broadcast({ t: 'boom', id, p: p.toArray(), kind: d.kind });
+  hostBlast(d.pos.clone(), d.pw, d.owner, d.kind, id);
+}
+function hostBlast(p, pw, owner, kind, id){
+  broadcast({ t: 'boom', id, p: p.toArray(), kind });
   if (toolsAllowed()){
     const cause = { k: 'boom', p: p.toArray().map(v => +v.toFixed(2)) };
     const R = clamp(pw.r, 1, 5), RG = R + 1.7, DMG = clamp(pw.dmg, 1, 12), PIL = clamp(pw.pil, 0, 12);
@@ -2536,7 +2772,8 @@ function startRound(stage, newGame){
   if (newGame) freshTeam();
   team.delivered = 0; team.craneAt = 0;
   items.clear();
-  for (const g of GEAR) if (team.owned[g.id]) items.set(g.id, { id: g.id, st: 'table' });
+  for (const g of GEAR) if (team.owned[g.id] && g.type !== 'vehicle') items.set(g.id, { id: g.id, st: 'table' });
+  lift.op = lift.rider = null; Object.assign(liftPose, { yaw: 0, pitch: .12, ext: 0 });
   loads = {}; taken = new Set();
   for (const k in carried) delete carried[k];
   Object.assign(truck, { n: 0, value: 0, state: 'here', goAt: 0, backAt: 0 });
@@ -2593,6 +2830,10 @@ function applyCells(list, by, cause){
   }
   if (!broken.length){ rebuildIntact(); return; }
   for (const i of broken) fxBreak(i, cause);
+  if (amHost()) for (const i of broken) if (MATS[baseType[i]].gas){
+    const c = cellPos(i, new V3());
+    hostTimers.push({ at: performance.now() + 160, fn: () => hostBlast(c, { r: 2.6, dmg: 4, pil: 1 }, by, 'gas') });
+  }
   if (by) stat(by).blocks += broken.length;
   let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
   for (const i of broken){ cellPos(i, _v); x0 = Math.min(x0, _v.x); y0 = Math.min(y0, _v.y); z0 = Math.min(z0, _v.z); x1 = Math.max(x1, _v.x); y1 = Math.max(y1, _v.y); z1 = Math.max(z1, _v.z); }
@@ -2680,7 +2921,7 @@ function applySnapshot(m){
   for (let i = 0; i < N; i++) hp[i] = m.hp[i];
   Object.assign(phase, m.phase);
   for (const k in m.stats) stats[k] = m.stats[k];
-  for (const d of m.dyns){ const o = addDyn(d.id, d.owner, d.p, null, d.kind, d.pw); o.cell = d.i; o.fuse = d.fuse; }
+  for (const d of m.dyns){ const o = addDyn(d.id, d.owner, d.p, null, d.kind, d.pw); o.cell = d.i; o.fuse = d.fuse; o.attach = d.attach || null; }
   rebuildIntact();
   applyWorld(m.world);
   spawnMe();
@@ -2735,40 +2976,141 @@ function openShop(v){
   $('#shop').classList.toggle('hidden', !v);
   if (v){ for (const k in keys) keys[k] = false; mouseL = false; if (document.pointerLockElement) document.exitPointerLock(); renderShop(); }
 }
+// 상점 아이콘: 장비 모형을 따로 찍어 쓴다
+const iconCache = {};
+let iconRenderer = null;
+function iconModel(id){
+  if (id === 'crane'){
+    const g = new THREE.Group();
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(.5, 24, 16), ballMat); g.add(ball);
+    const ch = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 1.2, 8), chainMat); ch.position.y = .9; g.add(ch);
+    return g;
+  }
+  if (id === 'lift'){
+    const g = new THREE.Group(), y = new THREE.MeshStandardMaterial({ color: 0xe6b012, roughness: .5 });
+    const b = new THREE.Mesh(new THREE.BoxGeometry(1.4, .4, .9), y); b.position.y = .3; g.add(b);
+    const boom = new THREE.Mesh(new THREE.BoxGeometry(1.8, .14, .14), y); boom.position.set(.55, 1.05, 0); boom.rotation.z = .75; g.add(boom);
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(.5, .3, .5), new THREE.MeshStandardMaterial({ color: 0x9aa1a8, metalness: .6, roughness: .4 })); bk.position.set(1.25, 1.75, 0); g.add(bk);
+    for (const [x, z] of [[-.45, .45], [.45, .45], [-.45, -.45], [.45, -.45]]){ const w = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .1, 12), blackMat2); w.rotation.x = Math.PI / 2; w.position.set(x, .16, z); g.add(w); }
+    return g;
+  }
+  const g = new THREE.Group(), mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: .5 });
+  const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); g.add(o); return o; };
+  if (id === 'dyn'){
+    for (const [x, z] of [[-.1, 0], [.1, 0], [0, .17]]) add(new THREE.CylinderGeometry(.09, .09, .62, 14), mat(0xc8261b), x, 0, z);
+    add(new THREE.CylinderGeometry(.24, .24, .1, 16), mat(0x1b1b1b), 0, .12, .06).scale.set(1, 1, .75);
+    add(new THREE.CylinderGeometry(.012, .012, .3, 6), mat(0xd8c9a0), 0, .45, .06).rotation.z = .5;
+    return g;
+  }
+  if (id === 'grenade'){
+    add(new THREE.SphereGeometry(.3, 20, 16), mat(0x3d4a2a), 0, 0, 0).scale.set(1, 1.15, 1);
+    add(new THREE.BoxGeometry(.12, .16, .12), steelMat, 0, .38, 0);
+    add(new THREE.TorusGeometry(.08, .015, 8, 16), steelMat, .1, .44, 0);
+    add(new THREE.BoxGeometry(.05, .34, .07), steelMat, -.12, .28, 0).rotation.z = .25;
+    return g;
+  }
+  if (id === 'c4'){
+    add(new THREE.BoxGeometry(.7, .2, .42), mat(0xd9d4c4), 0, 0, 0);
+    add(new THREE.BoxGeometry(.22, .1, .16), mat(0x222428), .12, .15, 0);
+    add(new THREE.SphereGeometry(.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0x30ff60 }), .2, .21, 0);
+    for (const [c, z] of [[0xd8261b, -.04], [0x2a6bd8, .04]]) add(new THREE.CylinderGeometry(.012, .012, .5, 6), mat(c), -.1, .14, z).rotation.z = Math.PI / 2 - .3;
+    return g;
+  }
+  if (id === 'thermite'){
+    for (const x of [-.14, .14]){ add(new THREE.CylinderGeometry(.12, .12, .5, 16), new THREE.MeshStandardMaterial({ color: 0x9aa1a8, metalness: .6, roughness: .35 }), x, 0, 0); add(new THREE.CylinderGeometry(.122, .122, .12, 16), mat(0xff7a1a), x, .05, 0); }
+    return g;
+  }
+  return makeItemModel(id);
+}
+function itemIcon(id){
+  if (iconCache[id]) return iconCache[id];
+  try {
+    if (!iconRenderer){
+      iconRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      iconRenderer.setSize(200, 200); iconRenderer.setClearColor(0x000000, 0);
+      iconRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    }
+    const sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.4));
+    const l = new THREE.DirectionalLight(0xfff2dd, 2.4); l.position.set(2, 4, 3); sc.add(l);
+    const m = iconModel(id); sc.add(m);
+    const box = new THREE.Box3().setFromObject(m), c = box.getCenter(new V3()), r = box.getSize(new V3()).length() * .5;
+    const cam = new THREE.PerspectiveCamera(30, 1, .01, 100);
+    cam.position.copy(c).add(new V3(1.1, .9, 1.4).normalize().multiplyScalar(r / Math.sin(THREE.MathUtils.degToRad(15)) * 1.05));
+    cam.lookAt(c);
+    iconRenderer.render(sc, cam);
+    iconCache[id] = iconRenderer.domElement.toDataURL();
+  } catch { iconCache[id] = ''; }
+  return iconCache[id];
+}
+// 업그레이드는 효과를 큰 글자로
+const UP_GLYPH = { toolPow: '+1', swing: '⇡', teamwork: '×2', dynPow: '+R', truckCap: '+15', truckSpd: '-3s', price: '+20%', boots: '+12%', bulk: '-15%', craneCd: '-15s' };
+const SHOP_TABS = [
+  { id: 'tool', name: '도구', ids: ['sledge', 'jack', 'cutter'] },
+  { id: 'boom', name: '폭약', ids: ['grenade', 'dyn', 'c4', 'thermite'] },
+  { id: 'big', name: '장비', ids: ['lift', 'crane'] },
+  { id: 'up', name: '업그레이드' },
+];
+let shopTab = 'tool', shopSel = null;
+const gearLocked = g => !!(g.unlock && curStage < g.unlock);
+function tabEntries(tab){
+  if (tab.id === 'up') return UPS.map(u => ({ kind: 'up', u }));
+  return tab.ids.map(id => ({ kind: 'gear', g: GEAR_BY[id] }));
+}
+function entryInfo(e){
+  if (e.kind === 'up'){
+    const u = e.u, L = lvOf(u.id), max = u.price.length, locked = u.req && !team.owned[u.req];
+    const price = L < max ? u.price[L] : 0;
+    return { key: 'up:' + u.id, name: u.name, desc: u.desc, glyph: UP_GLYPH[u.id] || '+', locked, done: L >= max, price, can: !locked && L < max && team.money >= price,
+      tag: L >= max ? '최대' : locked ? `${GEAR_BY[u.req].name} 필요` : fmtMoney(price), lv: `Lv.${L}/${max}`, L, max };
+  }
+  const g = e.g, owned = !!team.owned[g.id], locked = gearLocked(g);
+  return { key: 'gear:' + g.id, name: g.name, desc: g.desc, icon: itemIcon(g.id), locked, owned, price: g.price, can: !owned && !locked && team.money >= g.price,
+    tag: locked ? `${g.unlock}스테이지부터` : owned ? '보유' : fmtMoney(g.price), g };
+}
 function renderShop(){
   $('#shopMoney').textContent = fmtMoney(team.money);
-  const rank = g => (g.unlock && curStage < g.unlock) ? 2 : team.owned[g.id] ? 1 : 0;
-  $('#gearList').innerHTML = [...GEAR].sort((a, b) => rank(a) - rank(b) || a.price - b.price).map(g => {
-    const has = team.owned[g.id], it = items.get(g.id);
-    let btn;
-    if (!has && g.unlock && curStage < g.unlock) btn = `<button class="buy" disabled>${g.unlock}스테이지부터</button>`;
-    else if (!has) btn = `<button class="buy" data-gear="${g.id}" ${team.money < g.price ? 'disabled' : ''}>${fmtMoney(g.price)}</button>`;
-    else {
-      const where = !it ? '현장' : it.st === 'held' ? `${esc(nameOf(it.by))} 사용 중` : it.st === 'table' ? '테이블' : '바닥';
-      btn = `<button class="buy" disabled>${where}</button>`;
-      if (g.pack){ const pp = ST.packPrice(g); btn = `<div class="btns">${btn}<button class="buy" data-pack="${g.id}" ${team.money < pp ? 'disabled' : ''}>+${g.pack.n}개 ${fmtMoney(pp)}</button></div>`; }
-    }
-    const cnt = has && g.pack ? ` <span class="me">남은 ${team.ch[g.id] || 0}개</span>` : '';
-    return `<div class="item${has ? ' owned' : ''}"><div class="info"><div class="nm">${g.name}${cnt}</div><div class="ds">${g.desc}</div></div>${btn}</div>`;
+  $('#shopTabs').innerHTML = SHOP_TABS.map(t => {
+    const any = tabEntries(t).some(e => entryInfo(e).can);
+    return `<button class="tab${t.id === shopTab ? ' on' : ''}" data-tab="${t.id}">${t.name}${any ? '<i class="dotNew"></i>' : ''}</button>`;
   }).join('');
-  $('#upList').innerHTML = UPS.map(u => {
-    const L = lvOf(u.id), max = u.price.length, locked = u.req && !team.owned[u.req];
-    const pips = u.price.map((_, k) => `<i class="pip${k < L ? ' on' : ''}"></i>`).join('');
-    let btn;
-    if (L >= max) btn = `<button class="buy" disabled>최대</button>`;
-    else if (locked) btn = `<button class="buy" disabled>${GEAR_BY[u.req].name} 필요</button>`;
-    else btn = `<button class="buy" data-up="${u.id}" ${team.money < u.price[L] ? 'disabled' : ''}>${fmtMoney(u.price[L])}</button>`;
-    return `<div class="item"><div class="info"><div class="nm">${u.name} <span class="me">Lv.${L}</span></div><div class="ds">${u.desc}</div><div class="pips">${pips}</div></div>${btn}</div>`;
+  const tab = SHOP_TABS.find(t => t.id === shopTab), list = tabEntries(tab).map(entryInfo);
+  if (!list.some(x => x.key === shopSel)) shopSel = list[0].key;
+  $('#shopGrid').innerHTML = list.map(x => {
+    const cls = x.locked ? 'lock' : x.owned || x.done ? 'own' : x.can ? '' : 'no';
+    const art = x.icon ? `<img src="${x.icon}" alt="">` : `<span class="glyph">${x.glyph}</span>`;
+    return `<div class="tile${x.key === shopSel ? ' sel' : ''}${x.locked ? ' locked' : ''}" data-sel="${x.key}"><div class="ic">${art}</div>${x.lv ? `<span class="lv">${x.lv}</span>` : ''}<div class="tn">${esc(x.name)}</div><div class="tp ${cls}">${esc(x.tag)}</div></div>`;
   }).join('');
+  const x = list.find(v => v.key === shopSel);
+  const art = x.icon ? `<img src="${x.icon}" alt="">` : `<span class="glyph">${x.glyph}</span>`;
+  let act = '', state = '';
+  if (x.kind === 'up' || x.key.startsWith('up:')){
+    state = `<div class="pips">${Array.from({ length: x.max }, (_, k) => `<i class="pip${k < x.L ? ' on' : ''}"></i>`).join('')}</div>`;
+    act = x.done ? '<button class="buy" disabled>최대 레벨</button>' : x.locked ? `<button class="buy" disabled>${esc(x.tag)}</button>`
+      : `<button class="buy" data-buy="up:${x.key.slice(3)}" ${x.can ? '' : 'disabled'}>업그레이드 · ${fmtMoney(x.price)}</button>`;
+  } else {
+    const g = x.g, it = items.get(g.id);
+    if (x.owned){
+      const where = g.type === 'vehicle' ? '건물 옆에 있음' : !it ? '현장에 있음' : it.st === 'held' ? `${nameOf(it.by)} 사용 중` : it.st === 'table' ? '공구 테이블에 있음' : '바닥에 떨어져 있음';
+      state = `<div class="state">${esc(where)}${g.pack ? ` · 남은 ${team.ch[g.id] || 0}개` : ''}</div>`;
+      act = '<button class="buy" disabled>보유 중</button>';
+      if (g.pack){ const pp = ST.packPrice(g); act += `<button class="buy sub" data-buy="pack:${g.id}" ${team.money >= pp ? '' : 'disabled'}>+${g.pack.n}개 보충 · ${fmtMoney(pp)}</button>`; }
+    } else if (x.locked) act = `<button class="buy" disabled>${esc(x.tag)}</button>`;
+    else act = `<button class="buy" data-buy="gear:${g.id}" ${x.can ? '' : 'disabled'}>구매 · ${fmtMoney(g.price)}</button>`;
+  }
+  $('#shopDetail').innerHTML = `<div class="big">${art}</div><h3>${esc(x.name)}</h3><div class="ds">${esc(x.desc)}</div>${state}${act}`;
 }
 $('#shop').addEventListener('click', e => {
-  const b = e.target.closest('button');
-  if (!b){ if (e.target.id === 'shop') openShop(false); return; }
-  if (b.id === 'shopClose'){ openShop(false); return; }
-  const kind = b.dataset.gear ? 'gear' : b.dataset.pack ? 'pack' : b.dataset.up ? 'up' : null;
-  if (!kind) return;
-  toHost({ t: 'buy', kind, id: b.dataset.gear || b.dataset.pack || b.dataset.up });
-  sfx('buy');
+  if (e.target.id === 'shop'){ openShop(false); return; }
+  const el = e.target.closest('[data-tab],[data-sel],[data-buy],#shopClose');
+  if (!el) return;
+  if (el.id === 'shopClose') openShop(false);
+  else if (el.dataset.tab){ shopTab = el.dataset.tab; shopSel = null; renderShop(); }
+  else if (el.dataset.sel){ shopSel = el.dataset.sel; renderShop(); }
+  else if (el.dataset.buy){
+    const [kind, id] = el.dataset.buy.split(':');
+    toHost({ t: 'buy', kind, id });
+  }
 });
 
 /* ================= 내 작업자 ================= */
@@ -2845,7 +3187,18 @@ function updateMe(dt){
   const fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw), rx = Math.cos(me.yaw), rz = -Math.sin(me.yaw);
   let wx = fx * f + rx * s, wz = fz * f + rz * s;
   const wl = Math.hypot(wx, wz); if (wl > 0){ wx /= wl; wz /= wl; }
-  const myLoad = loadOf(myId);
+  const myLoad = loadOf(myId), role = liftRole(myId);
+  if (role === 'op'){
+    if (act && !shopOpen){
+      liftPose.yaw += ((keys.KeyA ? 1 : 0) - (keys.KeyD ? 1 : 0)) * .9 * dt;
+      liftPose.pitch = clamp(liftPose.pitch + ((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0)) * .55 * dt, 0, 1.35);
+      liftPose.ext = clamp(liftPose.ext + ((keys.Space ? 1 : 0) - (keys.ShiftLeft || keys.ShiftRight ? 1 : 0)) * 4 * dt, 0, 11);
+    }
+    liftPanel(me.pos); me.vel.set(0, 0, 0); me.onGround = true;
+  } else if (role === 'rider'){
+    const tip = liftTip(_r, liftView);
+    me.pos.set(tip.x, tip.y - .86, tip.z); me.vel.set(0, 0, 0); me.onGround = true;
+  } else {
   const spd = (keys.ShiftLeft || keys.ShiftRight ? 7.6 : 4.8) * ST.speed() * ST.carrySpeed(me.tool);
   const acc = me.onGround ? (act ? 14 : 4) : 2.5;
   const k = 1 - Math.exp(-acc * dt);
@@ -2856,6 +3209,7 @@ function updateMe(dt){
   moveAxis('x', me.vel.x * dt); moveAxis('z', me.vel.z * dt); moveAxis('y', me.vel.y * dt);
   if (me.pos.y < 0){ me.pos.y = 0; me.vel.y = 0; me.onGround = true; }
   collideMePieces();
+  }
   if (truckSolid() && me.pos.y < 2.3){
     const x = me.pos.x - truckPos.x, z = me.pos.z - truckPos.z, ex = 1.2 + PR, z0 = -3.55 - PR, z1 = 2.85 + PR;
     if (Math.abs(x) < ex && z > z0 && z < z1){
@@ -3008,8 +3362,7 @@ function throwRubble(){
   toHost({ t: 'toss', i: L[0], p: o.toArray().map(x => +x.toFixed(2)), v: v.toArray().map(x => +x.toFixed(2)) });
 }
 function useTool(){
-  if (me.tool === 'hands') throwRubble();
-  else if (THROWN.includes(me.tool)) throwExplosive(me.tool);
+  if (THROWN.includes(me.tool)) throwExplosive(me.tool);
   else if (me.tool === 'crane') callCrane();
 }
 function detonate(){
@@ -3036,6 +3389,16 @@ function updateInteract(){
   const own = me.tool !== 'hands' && me.tool !== 'hammer';
   if (!joined || me.down > 0 || !toolsAllowed()) return;
   const g = GEAR_BY[me.tool];
+  if (me.tool === 'hands'){ inter = { kind: 'throw', label: '던지기' }; return; }
+  // 고소 크레인: 뒤쪽 조종석 · 바구니
+  if (team.owned.lift){
+    const role = liftRole(myId);
+    if (role){ inter = { kind: 'liftLeave', label: role === 'op' ? '조종 그만하기' : '바구니에서 내리기' }; return; }
+    const pn = liftPanel(_r);
+    if (!lift.op && Math.hypot(me.pos.x - pn.x, me.pos.z - pn.z) < 1.8){ inter = { kind: 'liftOp', label: '크레인 조종' }; return; }
+    const tip = liftTip(_r, liftView);
+    if (!lift.rider && Math.hypot(me.pos.x - tip.x, me.pos.z - tip.z) < 2.2 && tip.y - .9 < me.pos.y + 1.8){ inter = { kind: 'liftRide', label: '바구니 타기' }; return; }
+  }
   // 가까운 장비
   let best = null, bd = 2.2;
   for (const it of items.values()){
@@ -3043,11 +3406,9 @@ function updateInteract(){
     const d = Math.hypot(it.mesh.position.x - me.pos.x, it.mesh.position.z - me.pos.z);
     if (d < bd){ bd = d; best = it; }
   }
-  const handFull = me.tool === 'hands';
   if (best){
     const bg = GEAR_BY[best.id];
-    if (handFull) inter = { kind: 'none', label: '손이 꽉 참', off: true };
-    else inter = { kind: 'item', id: best.id, label: `${own ? '바꿔 들기' : '줍기'} · ${bg.name}` };
+    inter = { kind: 'item', id: best.id, label: `${own ? '바꿔 들기' : '줍기'} · ${bg.name}` };
     return;
   }
   // 잔해 (개인 망치만 들고 있을 때 — 망치는 허리에 찬다)
@@ -3059,7 +3420,11 @@ function updateInteract(){
 }
 function doInteract(){
   if (!inter) return;
-  if (inter.kind === 'item') toHost({ t: 'grab', g: inter.id, p: dropPoint() });
+  if (inter.kind === 'throw') throwRubble();
+  else if (inter.kind === 'liftOp') toHost({ t: 'lift', act: 'op' });
+  else if (inter.kind === 'liftRide') toHost({ t: 'lift', act: 'ride' });
+  else if (inter.kind === 'liftLeave') toHost({ t: 'lift', act: 'leave' });
+  else if (inter.kind === 'item') toHost({ t: 'grab', g: inter.id, p: dropPoint() });
   else if (inter.kind === 'drop') toHost({ t: 'drop', p: dropPoint() });
   else if (inter.kind === 'rubble'){
     const i = inter.piece.cell;
@@ -3131,13 +3496,6 @@ function updateHUD(){
     const next = !r.ok ? '같은 스테이지 다시 도전' : phase.stage >= STAGES.length ? '처음부터 새 게임' : `STAGE ${phase.stage + 1} 「${STAGES[phase.stage].name}」`;
     setText($('#endAgain'), 'endAgain', `${sec}초 뒤 ${next} · B 상점`);
   }
-  const wr = $('#waitRoom');
-  if (phase.ph === 'lobby'){
-    const names = crewList().map(({ id }) => `<div class="crewRow"><span class="dot" style="background:${colorOf(id)}"></span><span class="nm">${esc(nameOf(id))}${id === myId ? ' <span class="me">(나)</span>' : ''}</span>${id === hostId ? '<span class="badge">방장</span>' : ''}</div>`).join('');
-    setHTML(wr, 'wait', `<h3>${esc(net ? net.roomName : '')}</h3><div class="sub">대기실 · ${crewList().length}/6</div><div class="plist">${names}</div>`
-      + (amHost() ? '<button data-act="start">시작하기</button>' : '<div class="sub">시작 대기 중</div>') + '<button class="leave" data-act="leave">방 나가기</button>');
-    wr.classList.remove('hidden');
-  } else wr.classList.add('hidden');
   setText($('#phase'), 'phase', phaseText);
   setText($('#timer'), 'timer', timer);
   $('#timer').classList.toggle('warn', warn);
@@ -3171,7 +3529,8 @@ function updateHUD(){
   // 손에 든 것
   const g = GEAR_BY[me.tool];
   let sub = '';
-  if (me.tool === 'hands') sub = '좌클릭 던지기';
+  if (liftRole(myId) === 'op') sub = 'A·D 회전 · W·S 높이 · Space·Shift 길이';
+  else if (me.tool === 'hands') sub = 'E 던지기';
   else if (me.tool === 'hammer') sub = '좌클릭 · E 줍기';
   else if (g.type === 'throw') sub = `${team.ch[me.tool] || 0}개 · 좌클릭`;
   else if (g.type === 'crane'){ const w = Math.ceil((team.craneAt - t) / 1000); sub = w > 0 ? `${w}초` : '좌클릭'; }
@@ -3181,6 +3540,7 @@ function updateHUD(){
   const ie = $('#interact');
   if (inter && !shopOpen){ setHTML(ie, 'inter', inter.kind === 'none' ? esc(inter.label) : `<kbd>E</kbd> ${esc(inter.label)}`); ie.classList.remove('hidden'); ie.classList.toggle('off', !!inter.off); }
   else ie.classList.add('hidden');
+  updateItemTags();
   // 설치한 폭약 → 터뜨리는 법을 계속 보여 준다
   const mineAll = [...dynMap.values()].filter(d => d.owner === myId);
   const ready = mineAll.filter(d => DET_KINDS.includes(d.kind) && d.stuck && !d.fuse).length, fusing = mineAll.some(d => d.fuse);
@@ -3312,17 +3672,28 @@ btnLocal.addEventListener('click', async () => {
   net = new LocalNet('local'); joinedAt = Date.now() * 100;
   await startPlaying();
 });
-$('#waitRoom').addEventListener('click', e => {
+// 방 화면: 접속자 목록 · 방장만 시작
+const roomView = $('#roomView');
+roomView.addEventListener('click', e => {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   if (b.dataset.act === 'start') toHost({ t: 'start' });
   else location.reload();
 });
+function updateRoomView(){
+  const list = crewList();
+  let rows = list.map(({ id }) => `<div class="pRow"><span class="dot" style="background:${colorOf(id)}"></span><span class="nm">${esc(nameOf(id))}${id === myId ? ' <span class="me">(나)</span>' : ''}</span>${id === hostId ? '<span class="badge">방장</span>' : ''}</div>`).join('');
+  for (let k = list.length; k < 6; k++) rows += '<div class="pRow empty"><span class="dot" style="background:#ffffff14"></span><span class="nm">빈 자리</span></div>';
+  setHTML(roomView, 'room', `<div class="roomHead"><b>${esc(net ? net.roomName : '')}</b><span>${list.length}/6</span></div><div class="players">${rows}</div>`
+    + (amHost() ? '<button data-act="start">시작하기</button>' : '<div class="waitMsg">방장이 시작하면 바로 들어갑니다</div>')
+    + '<button class="ghost" data-act="leave">나가기</button>');
+}
 function sendState(){
   if (!net || !joined) return;
   send({ t: 'st', name: myName, color: myColor, ja: joinedAt, p: me.pos.toArray().map(v => +v.toFixed(3)), yaw: +me.yaw.toFixed(3),
     sp: +Math.hypot(me.vel.x, me.vel.z).toFixed(2), sw: me.sw, th: me.th, dn: me.down > 0, downs: me.downs,
     dr: me.drilling, pt: +me.pitch.toFixed(2) });
+  if (lift.op === myId) send({ t: 'lp', yaw: +liftPose.yaw.toFixed(3), pitch: +liftPose.pitch.toFixed(3), ext: +liftPose.ext.toFixed(2) });
 }
 async function startPlaying(){
   net.onmessage = onNetMessage;
@@ -3336,10 +3707,19 @@ async function startPlaying(){
   updateHost();
   joined = true;
   spawnMe();
-  $('#lobby').classList.add('hidden');
-  $('#hud').classList.remove('hidden');
+  $('#lobbyView').classList.add('hidden');
+  roomView.classList.remove('hidden');
   sendState();
-  if (phase.ph !== 'lobby') lockPointer();
+}
+// 시작 전에는 방 화면, 시작하면 월드로
+let shownWorld = false;
+function syncScreen(){
+  const world = joined && phase.ph !== 'lobby';
+  if (world === shownWorld) return;
+  shownWorld = world;
+  $('#lobby').classList.toggle('hidden', world);
+  $('#hud').classList.toggle('hidden', !world);
+  if (world) spawnMe();
 }
 addEventListener('beforeunload', () => { if (joined) send({ t: 'bye' }); });
 
@@ -3380,11 +3760,14 @@ function frame(){
   updateClusters(dt);
   checkSleepers();
   evictPieces(dt);
-  if (joined){
+  if (joined) syncScreen();
+  if (joined && shownWorld){
     updateMe(raw);
     updateCamera(raw);
     updateAim();
     updateInteract();
+  } else lobbyCamera(now);
+  if (joined){
     for (const [id, p] of peers){
       if (!p.av || !p.tp) continue;
       const k = 1 - Math.exp(-dt * 12);
@@ -3397,9 +3780,10 @@ function frame(){
       animAvatar(p.av, p.sp, dt, p.dn, p.dr, p.pt);
     }
     if (amHost()) hostTick();
-    updateHUD();
-  } else lobbyCamera(now);
+    if (shownWorld) updateHUD(); else updateRoomView();
+  }
   updateTruckVisual();
+  updateLift(dt);
   updateStrikes(dt);
   updateDyns(dt);
   updateShakes(dt);
