@@ -2777,7 +2777,11 @@ function onHostMsg(m){
       break;
     case 'lift': {
       if (!team.owned.lift || !toolsAllowed()) return;
-      if (m.act === 'op' && !lift.op && lift.rider !== m.from) lift.op = m.from;
+      if (m.act === 'op' && !lift.op && lift.rider !== m.from){
+        lift.op = m.from;
+        const cur = heldBy(m.from), tp = playerPos(m.from);
+        if (cur && tp){ cur.st = 'ground'; cur.p = [tp.x + rand(-.6, .6), 0, tp.z + rand(-.6, .6), rand(0, 6)]; }
+      }
       else if (m.act === 'ride' && !lift.rider && lift.op !== m.from) lift.rider = m.from;
       else if (m.act === 'leave'){ if (lift.op === m.from) lift.op = null; if (lift.rider === m.from) lift.rider = null; }
       hostSync();
@@ -2787,7 +2791,7 @@ function onHostMsg(m){
       const it = items.get(m.g);
       if (!it || it.st === 'held') return;
       const hand = loads['h:' + m.from] || [];
-      if (hand.length) return;
+      if (hand.length || lift.op === m.from) return;
       const cur = heldBy(m.from);
       if (cur){ cur.st = 'ground'; cur.p = m.p; }
       it.st = 'held'; it.by = m.from;
@@ -3383,6 +3387,14 @@ function knock(impulse, t, msg){
   if (me.down > 0) return;
   if (carriedBy(myId)) toHost({ t: 'carry', act: 'drop' });
   if (carry[myId]) toHost({ t: 'carry', act: 'leave' });
+  // 넘어지면 들고 있던 장비를 놓치고 크레인에서도 떨어진다 → 누구든 주워 갈 수 있다
+  const it = heldBy(myId);
+  if (it){
+    const a = rand(0, Math.PI * 2), r = rand(.8, 1.6);
+    toHost({ t: 'drop', p: [+(me.pos.x + Math.cos(a) * r).toFixed(2), 0, +(me.pos.z + Math.sin(a) * r).toFixed(2), +rand(0, 6).toFixed(2)] });
+    msg = (msg ? msg + ' · ' : '') + `${GEAR_BY[it.id].name} 놓침`;
+  }
+  if (liftRole(myId)) toHost({ t: 'lift', act: 'leave' });
   me.down = t; me.vel.add(impulse); me.downs++;
   me.swingT = -1; me.hitDone = true; me.drilling = false; mouseL = false;
   stat(myId).downs = me.downs;
