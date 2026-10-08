@@ -2109,7 +2109,7 @@ function loadOf(pid){ return (loads['h:' + pid] || []).length; }
 /* ================= 네트워크 ================= */
 // 같은 방 사람끼리는 중계 서버(Render)를 거쳐 메시지를 주고받는다.
 // 서버에 붙지 못하면 같은 브라우저의 창끼리만 BroadcastChannel로 연결한다.
-const RELAY_URL = 'https://demolition-crew.onrender.com';
+const RELAY_URL = 'https://demoltion-man.onrender.com';
 const relayUrl = () => (window.DEMOLITION_SERVER || RELAY_URL).replace(/\/$/, '');
 class RelayNet {
   constructor(url){ this.url = url; this.room = null; }

@@ -18,7 +18,7 @@ PORT=3129 npm start
 
 - 새 Web Service → 이 저장소 연결, 지역 Singapore
 - Build Command `npm install`, Start Command `npm start`
-- 서비스 이름 `demolition-crew` → 주소 `https://demolition-crew.onrender.com` (게임의 `RELAY_URL`과 같아야 한다)
+- 주소 `https://demoltion-man.onrender.com` (게임의 `RELAY_URL`과 같아야 한다)
 - 무료 요금제는 15분 동안 접속이 없으면 잠들고, 첫 접속 때 깨어나는 데 1분쯤 걸린다
 
 ## 게시 사이트
