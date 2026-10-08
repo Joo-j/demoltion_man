@@ -139,6 +139,13 @@ html,body{height:100%;overflow:hidden;background:#0d0f12;color:var(--text);font-
 .pRow.empty{color:#ffffff33}
 .waitMsg{text-align:center;color:var(--dim);font-size:13px;padding:12px 0 4px}
 #itemTags{position:absolute;inset:0;overflow:hidden}
+.ping{position:absolute;left:0;top:0;padding:3px 9px;border-radius:8px;background:#0e1014d0;border:2px solid;font-weight:800;font-size:13px;white-space:nowrap;pointer-events:none}
+.ping::after{content:'';position:absolute;left:50%;bottom:-9px;margin-left:-6px;border:6px solid transparent;border-top-color:inherit}
+.ping.sos{background:#ff3b1f;border-color:#fff;color:#fff;animation:sos .5s ease-in-out infinite alternate}
+@keyframes sos{to{transform:var(--tf) scale(1.12)}}
+#endAwards{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 12px}
+#endAwards div{padding:5px 10px;border-radius:8px;background:#ffffff10;font-size:12px;color:var(--dim)}
+#endAwards b{color:var(--text);margin-left:4px}
 .itemTag{position:absolute;left:0;top:0;padding:4px 10px;border-radius:8px;background:#ffd23f;color:#16110a;font-weight:900;font-size:13px;white-space:nowrap;box-shadow:0 4px 14px #0008}
 .card{width:460px;padding:30px 32px;background:#15181dee;border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px #000a}
 .card h1{font-size:44px;font-weight:900;letter-spacing:-1px}
@@ -217,6 +224,7 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
     <div class="st" id="endStage"></div>
     <h2 id="endTitle"></h2>
     <div class="sub" id="endSub"></div>
+    <div id="endAwards"></div>
     <table><thead><tr><th>작업자</th><th>부순 블록</th><th>나른 잔해</th><th>깔림</th></tr></thead><tbody id="endRows"></tbody></table>
     <div class="again" id="endAgain"></div>
   </div>
@@ -292,17 +300,17 @@ const MATS = [null,
   { name: '나무 칸막이', hp: 1, structural: false, span: 2, density: .5, value: 2, dust: [.66, .54, .4] },
   { name: '구리 배관', hp: 1, structural: false, span: 1, density: 1.6, value: 30, dust: [.82, .56, .36] },
   { name: '가스통', hp: 1, structural: false, span: 0, density: .8, value: 0, dust: [.9, .45, .35], gas: true },
-  { name: '금고', hp: 10, structural: false, span: 0, density: 3, value: 150, dust: [.42, .46, .42], coop: true },
+  { name: '금고', hp: 10, structural: false, span: 0, density: 3, value: 260, heavy: true, dust: [.42, .46, .42], coop: true },
 ];
 const T_WOOD = 6, T_COPPER = 7, T_GAS = 8, T_SAFE = 9;
 const NT = MATS.length;
 // 스테이지마다 모양이 다른 건물. shape(x, z) → { floors, kind } (없으면 빈 땅). 층마다 벽 3칸 + 슬래브 1칸.
 const STAGES = [
-  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2000, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10], safes: 1,
+  { name: '동네 상가', sub: 'ㄱ자 2층 상가', W: 14, D: 12, quota: 2000, sec: 600, coopMul: 1, slabMul: 1, door: [3, 4, 9, 10], safes: 2,
     shape: (x, z) => (x < 7 || z < 6) ? { floors: 2, kind: 'shop' } : null },
-  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 3000, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8], safes: 2,
+  { name: '폐공장', sub: '공장 + 굴뚝', W: 20, D: 12, quota: 3000, sec: 900, coopMul: 1.35, slabMul: 1.25, door: [6, 7, 8], safes: 3,
     shape: (x, z) => (x >= 16 && x <= 18 && z >= 7 && z <= 9) ? { floors: 6, kind: 'chimney' } : (x < 15 && z < 10) ? { floors: 2, kind: 'factory' } : null },
-  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 6000, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6], safes: 3,
+  { name: '옛 성당', sub: '본당 + 종탑', W: 12, D: 18, quota: 6000, sec: 1200, coopMul: 1.7, slabMul: 1.5, door: [5, 6], safes: 4,
     shape: (x, z) => (x >= 3 && x <= 8 && z <= 5) ? { floors: 7, kind: 'tower' } : (x >= 1 && x <= 10 && z >= 4) ? { floors: 3, kind: 'nave' } : null },
 ];
 let curStage = 0, W = 1, D = 1, H = 1, LAYER = 1, N = 1, OX = 0, OZ = 0, QUOTA = 600, ROUND_SEC = 300;
@@ -353,17 +361,19 @@ function genStage(n){
         const part = kd === 'shop' ? x === 7 && z < 6 : kd === 'factory' ? (x === 5 || x === 10) : kd === 'nave' ? z === 10 : false;
         const gap = ly < 2 && (kd === 'nave' ? x % 4 === 2 : z % 4 === 2);
         if (part && !gap) t = T_WOOD;
-        else if (!exposedAt(x, z + 1, y) && exposedAt(x, z + 2, y) && x % 3 === 1) t = T_COPPER;
+        else if (y >= 4 && !exposedAt(x, z + 1, y) && exposedAt(x, z + 2, y) && x % 3 === 1) t = T_COPPER;
         else if (ly === 0 && hash1(x * 31 + z * 17 + y * 7 + n * 101) < .045) t = T_GAS;
       }
       baseType[x + z * W + y * LAYER] = t;
     }
   }
-  // 금고: 1층 안쪽 빈칸 중 몇 곳 (문에서 먼 쪽)
+  // 금고: 맨 위층 안쪽 빈칸에 둔다. 크레인·사람 던지기·인간 사다리로 올라가야 일찍 챙길 수 있다
   const spots = [];
-  for (let z = 2; z < D; z++) for (let x = 0; x < W; x++){
+  for (let z = 1; z < D - 1; z++) for (let x = 0; x < W; x++){
     const k = x + z * W;
-    if (kind[k] && kind[k] !== 'chimney' && !baseType[k] && !exposedAt(x - 1, z, 0) && !exposedAt(x + 1, z, 0) && !exposedAt(x, z - 1, 0) && !exposedAt(x, z + 1, 0)) spots.push(k);
+    if (!kind[k] || kind[k] === 'chimney' || top[k] < 8) continue;
+    const y = top[k] - 4;
+    if (!baseType[k + y * LAYER] && !exposedAt(x - 1, z, y) && !exposedAt(x + 1, z, y) && !exposedAt(x, z - 1, y) && !exposedAt(x, z + 1, y)) spots.push(k + y * LAYER);
   }
   spots.sort((a, b) => hash1(a * 13 + n) - hash1(b * 13 + n));
   for (let s = 0; s < Math.min(S.safes, spots.length); s++) baseType[spots[s]] = T_SAFE;
@@ -1724,6 +1734,11 @@ function makeAvatar(color, name){
   cutter.position.set(0, 1.12, -.6); cutter.visible = false;
   body.add(cutter);
   const handLoad = add(body, rockGeo(11, .3), MAT_DEBRIS[2], 0, 1.15, -.42);
+  const pile = new THREE.Group();
+  for (const [x, z, sx, r] of [[-.25, .1, .7, .3], [.3, -.15, .6, 1.2], [0, .45, .8, 2.1], [.15, -.6, .55, .7]]){
+    const m = add(pile, rockGeo(20 + r * 7, .35), MAT_DEBRIS[3], x, .22, z); m.scale.set(sx, .5, .6); m.rotation.y = r;
+  }
+  pile.visible = false; g.add(pile);
   handLoad.scale.set(.45, .38, .4); handLoad.visible = false;
   // 손에 든 폭약·무전기
   const prop = build => { const g3 = new THREE.Group(); build(g3); g3.position.set(0, -.58, -.04); g3.visible = false; armR.add(g3); return g3; };
@@ -1747,7 +1762,7 @@ function makeAvatar(color, name){
     g.add(tag);
   }
   scene.add(g);
-  return { g, body, legL, legR, armL, armR, handLoad, load: 0, tools: { hammer, sledge, jack, cutter, dyn: dynProp, grenade: grenadeProp, c4: c4Prop, thermite: thermProp, crane: radio }, walk: 0, swingT: -1, throwT: -1, downT: 0, vest, tool: 'hammer' };
+  return { g, body, legL, legR, armL, armR, handLoad, load: 0, tools: { hammer, sledge, jack, cutter, dyn: dynProp, grenade: grenadeProp, c4: c4Prop, thermite: thermProp, crane: radio }, pile, tag, heldT: 0, spin: 0, walk: 0, swingT: -1, throwT: -1, downT: 0, vest, tool: 'hammer' };
 }
 function setAvatarTool(a, tool){
   if (a.tool === tool) return;
@@ -1755,12 +1770,20 @@ function setAvatarTool(a, tool){
   for (const k in a.tools) a.tools[k].visible = k === tool;
 }
 // 잔해를 들고 있으면 두 팔로 받친 덩어리를 보여 준다
-function setAvatarLoad(a, n){
-  if (a.load === n) return;
-  a.load = n;
+function setAvatarLoad(a, n, heavy){
+  const key = n * 2 + (heavy ? 1 : 0);
+  if (a.load === key) return;
+  a.load = key;
   a.handLoad.visible = a.tool === 'hands' && n > 0;
+  a.handLoad.material = MAT_DEBRIS[heavy ? 9 : 2];
+  if (heavy) a.handLoad.scale.set(.85, .7, .7); else a.handLoad.scale.set(.45, .38, .4);
 }
-function animAvatar(a, speed, dt, down, drilling, pitch = 0){
+// 사람끼리 엮인 자세: 들림(c)·같이 들기(h)·머리 위로 들고 있음·날아감·깔림
+function poseOf(pid, fly, buried){
+  const c = carry[pid];
+  return { held: c ? c.k : null, carrying: !!carriedBy(pid), fly, buried };
+}
+function animAvatar(a, speed, dt, down, drilling, pitch = 0, pose = null){
   a.walk += dt * speed * 2.1;
   const amp = Math.min(1, speed / 5) * .75, s = Math.sin(a.walk);
   a.legL.rotation.x = s * amp; a.legR.rotation.x = -s * amp;
@@ -1798,6 +1821,29 @@ function animAvatar(a, speed, dt, down, drilling, pitch = 0){
   a.body.rotation.x = a.downT * 1.45;
   a.body.position.y -= a.downT * .05;
   a.body.position.z = -a.downT * .25;
+  const ps = pose || {};
+  a.heldT = lerp(a.heldT, ps.held === 'c' ? 1 : 0, 1 - Math.exp(-dt * 12));
+  a.body.rotation.z = a.heldT * 1.5;
+  a.body.position.x = a.heldT * .85;
+  if (ps.held === 'c'){
+    // 머리 위에서 버둥거린다
+    const f = Math.sin(now * 16);
+    a.legL.rotation.x = f * .7; a.legR.rotation.x = -f * .7;
+    a.armL.rotation.set(-1.4 + f * .5, 0, .3); a.armR.rotation.set(-1.4 - f * .5, 0, -.3);
+  } else if (ps.carrying){
+    a.armR.rotation.set(-2.8, 0, -.3); a.armL.rotation.set(-2.8, 0, .3);
+  } else if (ps.held === 'h'){
+    a.armR.rotation.set(1.2, 0, -.12); a.armL.rotation.set(1.2, 0, .12);
+  }
+  if (ps.fly){
+    a.spin += dt * 9;
+    a.body.rotation.x = a.spin;
+    a.body.position.y = .9 - Math.cos(a.spin) * .9; a.body.position.z = -Math.sin(a.spin) * .9;
+    const f = Math.sin(now * 20);
+    a.armL.rotation.set(-2.6 + f * .6, 0, .6); a.armR.rotation.set(-2.6 - f * .6, 0, -.6);
+  } else a.spin = 0;
+  a.pile.visible = !!ps.buried;
+  if (a.tag) a.tag.position.y = 2.25 - a.heldT * 1.5;
 }
 
 /* ================= 다이너마이트·C4 ================= */
@@ -2047,7 +2093,7 @@ const GEAR = [
   { id: 'cutter', name: '절단기', type: 'hold', price: 700, desc: '기둥을 혼자 절단' },
   { id: 'c4', name: 'C4 가방', type: 'throw', price: 900, start: 2, pack: { n: 1, price: 150 }, desc: '기둥에 큰 피해 · 사람에게도 붙음 · 우클릭 기폭' },
   { id: 'thermite', name: '테르밋 상자', type: 'throw', price: 1100, start: 2, pack: { n: 1, price: 140 }, desc: '붙은 자리부터 아래로 녹임' },
-  { id: 'lift', name: '고소 크레인', type: 'vehicle', price: 900, desc: '한 명은 조종, 한 명은 바구니에서 높은 곳을 부숨' },
+  { id: 'lift', name: '고소 크레인', type: 'vehicle', price: 600, desc: '한 명은 조종, 한 명은 바구니에서 높은 곳을 부숨' },
   { id: 'crane', name: '레킹볼 리모컨', type: 'crane', price: 1800, desc: '쇠공으로 한 줄 관통' },
 ];
 // 모두가 기본으로 들고 있는 개인 망치 (테이블·상점에는 없다)
@@ -2108,6 +2154,12 @@ let taken = new Set();        // 누군가 집었거나 이미 판 잔해 칸 (�
 let shownTaken = new Set();   // 내 화면에서 이미 조각을 지운 칸
 const carried = {};           // 사람별 트럭에 실은 잔해 수
 const pendingTake = new Map();
+// 사람끼리 엮인 상태: carry[들린 사람] = { by: 든 사람, k: 'c'(머리 위로 듦) | 'h'(무거운 걸 같이 듦) }
+let carry = {};
+const carrierOf = pid => carry[pid] ? carry[pid].by : null;
+function carriedBy(pid){ for (const k in carry) if (carry[k].by === pid && carry[k].k === 'c') return k; return null; }
+function helpersOf(pid){ let n = 0; for (const k in carry) if (carry[k].by === pid && carry[k].k === 'h') n++; return n; }
+const heavyLoad = pid => { const L = loads['h:' + pid]; return !!(L && L.length && MATS[baseType[L[0]]].heavy); };
 const tablePos = new V3(), truckPos = new V3();
 const tableGroup = new THREE.Group();
 {
@@ -2260,6 +2312,59 @@ function placeItemMesh(it){
   }
   if (it.beacon) it.beacon.position.copy(it.mesh.position);
 }
+// Q: 조준한 곳에 내 색 표시 (말 안 해도 "여기!"가 된다)
+const pingList = [];
+const pingRingGeo = new THREE.RingGeometry(.35, .5, 32);
+let pingCD = 0;
+function sendPing(){
+  if (!joined || performance.now() < pingCD) return;
+  pingCD = performance.now() + 600;
+  updateAim();
+  const f = aimDir(new V3());
+  const p = aim ? aim.p.clone() : camera.position.clone().addScaledVector(f, 20);
+  const lab = aim && aim.i >= 0 && hp[aim.i] ? MATS[baseType[aim.i]].name : '여기';
+  broadcast({ t: 'ping', p: p.toArray().map(v => +v.toFixed(2)), lab });
+}
+function addPing(by, p, lab){
+  for (let k = pingList.length - 1; k >= 0; k--) if (pingList[k].by === by) dropPing(k);
+  const el = document.createElement('div');
+  el.className = 'ping'; el.style.borderColor = colorOf(by); el.style.color = colorOf(by);
+  el.innerHTML = `${esc(nameOf(by))} · <span style="color:#fff">${esc(lab)}</span>`;
+  $('#itemTags').appendChild(el);
+  const ring = new THREE.Mesh(pingRingGeo, new THREE.MeshBasicMaterial({ color: colorOf(by), transparent: true, depthTest: false, side: THREE.DoubleSide }));
+  ring.position.copy(p); ring.renderOrder = 11; scene.add(ring);
+  pingList.push({ by, p, el, ring, t: 5 });
+  sfx('beep', p, 2);
+}
+function dropPing(k){ const q = pingList[k]; q.el.remove(); scene.remove(q.ring); q.ring.material.dispose(); pingList.splice(k, 1); }
+const sosEls = new Map();
+function screenAt(el, p){
+  _v.copy(p).project(camera);
+  el.style.display = _v.z < 1 ? '' : 'none';
+  const tf = `translate(${(_v.x * .5 + .5) * innerWidth}px,${(-_v.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+  el.style.transform = tf; el.style.setProperty('--tf', tf);
+}
+function updatePings(dt){
+  for (let k = pingList.length - 1; k >= 0; k--){
+    const q = pingList[k];
+    q.t -= dt;
+    if (q.t <= 0){ dropPing(k); continue; }
+    q.ring.lookAt(camera.position);
+    const sc = 1 + (camera.position.distanceTo(q.p) * .04) + Math.sin(now * 8) * .1;
+    q.ring.scale.setScalar(sc);
+    q.ring.material.opacity = Math.min(1, q.t);
+    screenAt(q.el, _a.copy(q.p).setY(q.p.y + .6 * sc));
+    q.el.style.opacity = Math.min(1, q.t);
+  }
+  // 깔린 동료는 계속 SOS
+  for (const [id, el] of sosEls) if (!peers.get(id)?.bu){ el.remove(); sosEls.delete(id); }
+  for (const [id, p] of peers){
+    if (!p.bu) continue;
+    let el = sosEls.get(id);
+    if (!el){ el = document.createElement('div'); el.className = 'ping sos'; el.textContent = `${nameOf(id)} 깔림!`; $('#itemTags').appendChild(el); sosEls.set(id, el); }
+    screenAt(el, _a.set(p.pos.x, p.pos.y + 1.4, p.pos.z));
+  }
+}
 const itemTagEls = new Map();
 function updateItemTags(){
   const box = $('#itemTags');
@@ -2309,7 +2414,7 @@ function spillRubble(cells, p){
   }
 }
 function heldBy(pid){ for (const it of items.values()) if (it.st === 'held' && it.by === pid) return it; return null; }
-function toolOf(pid){ const it = heldBy(pid); return it ? it.id : (loads['h:' + pid] || []).length ? 'hands' : 'hammer'; }
+function toolOf(pid){ const it = heldBy(pid); return it ? it.id : carriedBy(pid) ? 'person' : (loads['h:' + pid] || []).length ? 'hands' : 'hammer'; }
 function loadOf(pid){ return (loads['h:' + pid] || []).length; }
 
 /* ================= 네트워크 ================= */
@@ -2378,7 +2483,7 @@ function stat(id){
 }
 function worldMsg(){
   return { t: 'world', team: { ...team }, items: [...items.values()].map(it => ({ id: it.id, st: it.st, by: it.by, p: it.p })),
-    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried }, lift: { ...lift, pose: { ...liftPose } } };
+    truck: { ...truck }, loads, taken: [...taken], carried: { ...carried }, carry, lift: { ...lift, pose: { ...liftPose } } };
 }
 function hostSync(){ broadcast(worldMsg()); }
 function applyWorld(m){
@@ -2400,6 +2505,14 @@ function applyWorld(m){
     if (wasRider && lift.rider !== myId) me.vel.set(0, 0, 0);
   }
   loads = m.loads || {};
+  const wasHeld = carry[myId];
+  carry = m.carry || {};
+  const nowHeld = carry[myId];
+  if (nowHeld && !wasHeld){
+    me.buried = 0; me.down = 0; me.vel.set(0, 0, 0); me.mash = 0;
+    if (nowHeld.k === 'c'){ toast(`${nameOf(nowHeld.by)}에게 들림! E 연타로 탈출`, 2400, 'carry'); sfx('pick', me.pos); }
+  }
+  if (wasHeld && !nowHeld && !me.flyT){ me.vel.set(rand(-2, 2), 4, rand(-2, 2)); }
   const nt = new Set(m.taken), fresh = new Set();
   for (const i of nt) if (!shownTaken.has(i)) fresh.add(i);
   shownTaken = new Set(nt);
@@ -2437,9 +2550,11 @@ function onMsg(m){
         p.av.g.position.copy(p.pos);
       }
       p.ja = m.ja; p.tp = new V3(...m.p); p.yaw = m.yaw; p.sp = m.sp; p.dn = m.dn; p.dr = m.dr; p.pt = m.pt || 0; p.last = performance.now();
+      p.fl = !!m.fl; p.bu = !!m.bu;
       if (m.sw !== p.sw){ p.sw = m.sw; p.av.swingT = 0; sfx('swing', p.tp); }
       if (m.th !== p.th){ p.th = m.th; p.av.throwT = 0; }
       const s = stat(m.from); s.name = m.name; s.color = m.color; s.downs = m.downs;
+      if (m.aw) [s.yeets, s.flown, s.smacks, s.saves] = m.aw;
       updateHost();
       break;
     }
@@ -2505,6 +2620,22 @@ function onMsg(m){
       else fxExplosion(new V3(...m.p), m.kind === 'c4' ? .8 : m.kind === 'grenade' ? .55 : 1);
       break;
     }
+    case 'yeet':
+      if (m.target === myId){
+        me.pos.set(...m.p); me.vel.set(...m.v); me.flyT = 2.5; me.flown++; me.down = 0; me.onGround = false; me.slammed.clear();
+        toast(`${nameOf(m.by)}가 던짐!`, 1800, 'carry');
+        addShake(me.pos, .5);
+      }
+      sfx('swing', new V3(...m.p));
+      break;
+    case 'dig':
+      if (m.target === myId && me.buried > 0){
+        me.buried -= 5; shake = Math.min(1.4, shake + .2);
+        if (me.buried <= 0){ unbury(m.from); send({ t: 'saved', by: m.from }); }
+      }
+      break;
+    case 'saved': if (m.by === myId){ me.saves++; toast(`${nameOf(m.from)} 구조!`, 1800); } break;
+    case 'ping': addPing(m.from, new V3(...m.p), m.lab); break;
     case 'crane': addStrike(m); break;
     case 'lp': if (lift.op !== myId){ liftPose.yaw = m.yaw; liftPose.pitch = m.pitch; liftPose.ext = m.ext; } break;
     case 'reset': resetWorld(m.stage); break;
@@ -2526,6 +2657,7 @@ function dropPeer(id){
     const it = heldBy(id);
     if (it){ it.st = 'ground'; it.p = [p.pos.x, 0, p.pos.z, 0]; }
     delete loads['h:' + id];
+    unlinkAll(id);
     if (lift.op === id) lift.op = null;
     if (lift.rider === id) lift.rider = null;
     hostSync();
@@ -2682,8 +2814,41 @@ function onHostMsg(m){
       if (!L || L[0] !== m.i) return;
       L.shift(); if (!L.length) delete loads[key];
       taken.delete(m.i);
+      for (const k in carry) if (carry[k].by === m.from && carry[k].k === 'h') delete carry[k];
       carried[m.from] = (carried[m.from] || 0) + 1;
       broadcast({ t: 'toss', by: m.from, list: [[m.i, m.p, m.v]] });
+      hostSync();
+      break;
+    }
+    case 'carry': {
+      if (!toolsAllowed()) return;
+      const tg = m.target;
+      if (m.act === 'grab'){
+        // 빈손(망치만)일 때만, 이미 엮인 사람·크레인 탄 사람은 못 듦
+        if (!tg || tg === m.from || !playerPos(tg) || toolOf(m.from) !== 'hammer' || carry[m.from] || carry[tg] || liftRole(tg) || liftRole(m.from)) return;
+        dropAllOf(tg);
+        unlinkAll(tg);
+        carry[tg] = { by: m.from, k: 'c' };
+        stat(m.from).grabs = (stat(m.from).grabs || 0) + 1;
+      } else if (m.act === 'help'){
+        if (!tg || !heavyLoad(tg) || toolOf(m.from) !== 'hammer' || carry[m.from] || carry[tg] || carriedBy(m.from)) return;
+        carry[m.from] = { by: tg, k: 'h' };
+      } else if (m.act === 'escape' || m.act === 'leave'){
+        if (!carry[m.from]) return;
+        delete carry[m.from];
+      } else if (m.act === 'drop'){
+        const k = carriedBy(m.from);
+        if (k) delete carry[k];
+      }
+      hostSync();
+      break;
+    }
+    case 'yeet': {
+      // 들고 있던 사람을 던진다 (던질 방향·속도는 던지는 사람이 정함)
+      if (!carry[m.target] || carry[m.target].by !== m.from || carry[m.target].k !== 'c') return;
+      delete carry[m.target];
+      const v = m.v.map(x => clamp(+x || 0, -24, 24));
+      broadcast({ t: 'yeet', target: m.target, by: m.from, p: m.p, v });
       hostSync();
       break;
     }
@@ -2726,6 +2891,8 @@ function onHostMsg(m){
         for (const i of cells) taken.delete(i);
         broadcast({ t: 'spill', cells, p: [tp.x, tp.y, tp.z] });
       }
+      // 들고 있던 사람·같이 들던 사람도 놓친다
+      unlinkAll(m.target);
       // 조종하거나 타고 있던 사람은 끌어내려진다
       if (lift.op === m.target) lift.op = null;
       if (lift.rider === m.target) lift.rider = null;
@@ -2734,6 +2901,23 @@ function onHostMsg(m){
       break;
     }
   }
+}
+// 사람이 들고 있던 장비·잔해를 그 자리에 떨어뜨린다
+function dropAllOf(pid){
+  const tp = playerPos(pid);
+  if (!tp) return;
+  const it = heldBy(pid);
+  if (it){ it.st = 'ground'; it.p = [tp.x + rand(-.8, .8), 0, tp.z + rand(-.8, .8), rand(0, 6)]; }
+  const hk = 'h:' + pid;
+  if (loads[hk] && loads[hk].length){
+    const cells = loads[hk]; delete loads[hk];
+    for (const i of cells) taken.delete(i);
+    broadcast({ t: 'spill', cells, p: [tp.x, Math.max(tp.y, 0), tp.z] });
+  }
+}
+// 그 사람과 엮인 것(든 사람·들린 사람·같이 든 사람)을 모두 푼다
+function unlinkAll(pid){
+  for (const k in carry) if (k === pid || carry[k].by === pid) delete carry[k];
 }
 function hostExplode(id){
   const d = dynMap.get(id);
@@ -2774,7 +2958,7 @@ function startRound(stage, newGame){
   items.clear();
   for (const g of GEAR) if (team.owned[g.id] && g.type !== 'vehicle') items.set(g.id, { id: g.id, st: 'table' });
   lift.op = lift.rider = null; Object.assign(liftPose, { yaw: 0, pitch: .12, ext: 0 });
-  loads = {}; taken = new Set();
+  loads = {}; taken = new Set(); carry = {};
   for (const k in carried) delete carried[k];
   Object.assign(truck, { n: 0, value: 0, state: 'here', goAt: 0, backAt: 0 });
   broadcast({ t: 'reset', stage });
@@ -2913,6 +3097,8 @@ function resetWorld(stage){
   for (let i = 0; i < N; i++) hp[i] = baseType[i] ? hpTab[baseType[i]] : 0;
   for (const k in stats) stats[k].blocks = 0;
   me.downs = 0; if (stats[myId]) stats[myId].downs = 0;
+  me.yeets = me.flown = me.smacks = me.saves = 0;
+  for (const k in stats) Object.assign(stats[k], { yeets: 0, flown: 0, smacks: 0, saves: 0 });
   rebuildIntact();
   spawnMe();
 }
@@ -3116,10 +3302,11 @@ $('#shop').addEventListener('click', e => {
 /* ================= 내 작업자 ================= */
 const PR = .3, PH = 1.75;
 const me = { pos: new V3(), vel: new V3(), yaw: Math.PI, pitch: -.12, onGround: false, down: 0, sw: 0, th: 0, swingCD: 0, swingT: -1, throwCD: 0,
-  jackT: 0, eT: 0, drilling: false, downs: 0, av: null, hitDone: false, tool: 'hammer', combo: 0, comboT: 0 };
+  jackT: 0, eT: 0, drilling: false, downs: 0, av: null, hitDone: false, tool: 'hammer', combo: 0, comboT: 0,
+  buried: 0, mash: 0, flyT: 0, slammed: new Set(), yeets: 0, flown: 0, smacks: 0, saves: 0 };
 function spawnMe(){
   me.pos.set(rand(-5, 5), 0, OZ - rand(5.5, 7)); me.vel.set(0, 0, 0);
-  me.yaw = Math.PI; me.pitch = -.12 + (H > 20 ? .15 : 0); me.down = 0;
+  me.yaw = Math.PI; me.pitch = -.12 + (H > 20 ? .15 : 0); me.down = 0; me.buried = 0; me.flyT = 0;
 }
 function moveAxis(ax, d){
   if (!d) return;
@@ -3129,6 +3316,7 @@ function moveAxis(ax, d){
   const z0 = Math.floor(p.z - PR - OZ), z1 = Math.floor(p.z + PR - OZ);
   for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++){
     if (!solidAt(x, y, z)) continue;
+    if (me.flyT > 0 && Math.abs(me.vel[ax]) > 8) bodySlam(x + z * W + y * LAYER, ax);
     if (ax === 'x') p.x = d > 0 ? OX + x - PR - .001 : OX + x + 1 + PR + .001;
     else if (ax === 'z') p.z = d > 0 ? OZ + z - PR - .001 : OZ + z + 1 + PR + .001;
     else if (d > 0) p.y = y - PH - .001;
@@ -3161,14 +3349,40 @@ function collideMePieces(){
     for (const q of c.pieces){
       const dx = p.x - q.pos.x, dz = p.z - q.pos.z, dy = clamp(q.pos.y, p.y + .3, p.y + PH - .3) - q.pos.y;
       if (dx * dx + dy * dy + dz * dz < .8 * .8){
-        if (me.down <= 0) knock(clusterPointVel(c, q.pos, new V3()).multiplyScalar(.5).add(_a.set(dx, 0, dz).normalize().multiplyScalar(4)).setY(3), 2.6);
+        if (me.down <= 0 && c.pieces.length >= 6 && q.pos.y > me.pos.y + .6) bury();
+        else if (me.down <= 0) knock(clusterPointVel(c, q.pos, new V3()).multiplyScalar(.5).add(_a.set(dx, 0, dz).normalize().multiplyScalar(4)).setY(3), 2.6);
         break;
       }
     }
   }
 }
+// 던져진 사람이 블록에 꽂힌다: 유리는 깨고 벽은 금이 간다
+function bodySlam(i, ax){
+  if (me.slammed.has(i) || !toolsAllowed()) return;
+  me.slammed.add(i);
+  cellPos(i, _v);
+  const p = [+_v.x.toFixed(2), +_v.y.toFixed(2), +_v.z.toFixed(2)], n = [ax === 'x' ? -Math.sign(me.vel.x) : 0, ax === 'y' ? -Math.sign(me.vel.y) : 0, ax === 'z' ? -Math.sign(me.vel.z) : 0];
+  localImpact({ i, p: _v.clone(), n }, 'sledge');
+  toHost({ t: 'hit', i, p, dmg: 3, tool: 'body', n });
+  addShake(me.pos, .6);
+}
+// 무너진 덩어리에 깔리면 혼자서는 한참 E를 연타해야 나온다. 동료가 꺼내 주면 금방
+const BURY_NEED = 14;
+function bury(){
+  if (me.buried > 0 || carry[myId]) return;
+  me.down = 0; knock(new V3(0, 0, 0), 99, '깔렸다! E 연타 · 동료가 꺼내 줄 수 있음');
+  me.buried = BURY_NEED; me.vel.set(0, 0, 0);
+}
+function unbury(by){
+  me.buried = 0; me.down = .4;
+  me.vel.set(rand(-1, 1), 5, rand(-1, 1));
+  toast(by ? `${nameOf(by)}가 꺼내 줌` : '탈출!', 1800, 'bury');
+  sfx('pick', me.pos);
+}
 function knock(impulse, t, msg){
   if (me.down > 0) return;
+  if (carriedBy(myId)) toHost({ t: 'carry', act: 'drop' });
+  if (carry[myId]) toHost({ t: 'carry', act: 'leave' });
   me.down = t; me.vel.add(impulse); me.downs++;
   me.swingT = -1; me.hitDone = true; me.drilling = false; mouseL = false;
   stat(myId).downs = me.downs;
@@ -3187,8 +3401,15 @@ function updateMe(dt){
   const fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw), rx = Math.cos(me.yaw), rz = -Math.sin(me.yaw);
   let wx = fx * f + rx * s, wz = fz * f + rz * s;
   const wl = Math.hypot(wx, wz); if (wl > 0){ wx /= wl; wz /= wl; }
-  const myLoad = loadOf(myId), role = liftRole(myId);
-  if (role === 'op'){
+  const myLoad = loadOf(myId), role = liftRole(myId), held = carry[myId];
+  if (held && playerPos(held.by)){
+    const hp0 = playerPos(held.by), hy = peers.get(held.by)?.av?.g.rotation.y ?? 0;
+    if (held.k === 'c') me.pos.set(hp0.x, hp0.y + 1.75, hp0.z);
+    else me.pos.set(hp0.x + Math.cos(hy) * .75, hp0.y, hp0.z - Math.sin(hy) * .75);
+    me.vel.set(0, 0, 0); me.onGround = true;
+  } else if (me.buried > 0){
+    me.vel.set(0, 0, 0); me.down = Math.max(me.down, 1);
+  } else if (role === 'op'){
     if (act && !shopOpen){
       liftPose.yaw += ((keys.KeyA ? 1 : 0) - (keys.KeyD ? 1 : 0)) * .9 * dt;
       liftPose.pitch = clamp(liftPose.pitch + ((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0)) * .55 * dt, 0, 1.35);
@@ -3199,16 +3420,30 @@ function updateMe(dt){
     const tip = liftTip(_r, liftView);
     me.pos.set(tip.x, tip.y - .86, tip.z); me.vel.set(0, 0, 0); me.onGround = true;
   } else {
-  const spd = (keys.ShiftLeft || keys.ShiftRight ? 7.6 : 4.8) * ST.speed() * ST.carrySpeed(me.tool);
-  const acc = me.onGround ? (act ? 14 : 4) : 2.5;
+  const spd = (keys.ShiftLeft || keys.ShiftRight ? 7.6 : 4.8) * ST.speed() * ST.carrySpeed(me.tool) * (heavyLoad(myId) && !helpersOf(myId) ? .4 : 1);
+  const acc = me.onGround ? (act ? 14 : 4) : me.flyT > 0 ? .25 : 2.5;
   const k = 1 - Math.exp(-acc * dt);
   me.vel.x = lerp(me.vel.x, wx * spd, k); me.vel.z = lerp(me.vel.z, wz * spd, k);
-  if (act && keys.Space && me.onGround){ me.vel.y = ST.jump(); me.onGround = false; }
+  if (act && keys.Space && me.onGround && !(heavyLoad(myId) && !helpersOf(myId))){ me.vel.y = ST.jump(); me.onGround = false; }
   me.vel.y -= 22 * dt;
   me.onGround = false;
   moveAxis('x', me.vel.x * dt); moveAxis('z', me.vel.z * dt); moveAxis('y', me.vel.y * dt);
   if (me.pos.y < 0){ me.pos.y = 0; me.vel.y = 0; me.onGround = true; }
   collideMePieces();
+  // 동료 머리 위에 설 수 있다 (인간 사다리)
+  if (me.vel.y <= 0) for (const p of peers.values()){
+    if (!p.av || p.dn) continue;
+    const top = p.pos.y + 1.82;
+    if (Math.hypot(me.pos.x - p.pos.x, me.pos.z - p.pos.z) < .42 && me.pos.y > top - .35 && me.pos.y < top + .05){
+      me.pos.y = top; me.vel.y = 0; me.onGround = true;
+      me.pos.x += (p.tp ? p.tp.x - p.pos.x : 0) * .5; me.pos.z += (p.tp ? p.tp.z - p.pos.z : 0) * .5;
+    }
+  }
+  if (me.flyT > 0){
+    me.flyT -= dt;
+    if (me.onGround && me.flyT < 2.3){ me.flyT = 0; me.slammed.clear(); }
+    if (me.flyT <= 0) me.slammed.clear();
+  }
   }
   if (truckSolid() && me.pos.y < 2.3){
     const x = me.pos.x - truckPos.x, z = me.pos.z - truckPos.z, ex = 1.2 + PR, z0 = -3.55 - PR, z1 = 2.85 + PR;
@@ -3240,10 +3475,10 @@ function updateMe(dt){
     if (me.swingT >= 1) me.swingT = -1;
   }
   setAvatarTool(me.av, me.tool);
-  setAvatarLoad(me.av, myLoad);
+  setAvatarLoad(me.av, myLoad, heavyLoad(myId));
   me.av.g.position.copy(me.pos);
-  me.av.g.rotation.y = me.yaw;
-  animAvatar(me.av, Math.hypot(me.vel.x, me.vel.z), dt, me.down > 0, me.drilling, me.pitch);
+  me.av.g.rotation.y = held && held.k === 'c' ? (peers.get(held.by)?.av?.g.rotation.y ?? me.yaw) : me.yaw;
+  animAvatar(me.av, Math.hypot(me.vel.x, me.vel.z), dt, me.down > 0, me.drilling, me.pitch, poseOf(myId, me.flyT > 0, me.buried > 0));
 }
 function startSwing(){
   me.swingTool = me.tool;
@@ -3286,6 +3521,7 @@ function meleeHit(dmg, tool){
       const p = peers.get(target).pos.clone().setY(1.3);
       sparks(p, 8, 3); sfx('hit', p); hitMark(true); shake = Math.min(1.4, shake + .2);
       toHost({ t: 'smack', target });
+      me.smacks++;
       return;
     }
   }
@@ -3355,11 +3591,41 @@ function throwRubble(){
   const f = aimDir(new V3());
   const target = aim ? aim.p : camera.position.clone().addScaledVector(f, 25);
   const dir = target.clone().sub(o), dist = dir.length(); dir.normalize();
-  const speed = clamp(6 + dist * .8, 7, 16);
+  const solo = heavyLoad(myId) && !helpersOf(myId);
+  const speed = solo ? 3.5 : clamp(6 + dist * .8, 7, 16);
   const v = dir.multiplyScalar(speed);
-  v.y += DGRAV * (dist / speed) * .5;
+  v.y += solo ? 2 : DGRAV * (dist / speed) * .5;
+  if (solo) toast('너무 무거움 · 같이 들기', 1600, 'heavy');
   me.th++; me.av.throwT = 0;
   toHost({ t: 'toss', i: L[0], p: o.toArray().map(x => +x.toFixed(2)), v: v.toArray().map(x => +x.toFixed(2)) });
+}
+// 머리 위로 든 동료를 조준한 곳으로 던진다
+function throwPerson(){
+  const tg = carriedBy(myId);
+  if (!tg || me.down > 0) return;
+  const o = new V3(me.pos.x, me.pos.y + 1.9, me.pos.z);
+  updateAim();
+  const f = aimDir(new V3());
+  const target = aim ? aim.p : camera.position.clone().addScaledVector(f, 18);
+  const dir = target.clone().sub(o), dist = dir.length(); dir.normalize();
+  const speed = clamp(10 + dist * .55, 11, 20);
+  const v = dir.multiplyScalar(speed);
+  v.y += 22 * (dist / speed) * .5;
+  me.th++; me.av.throwT = 0; me.yeets++;
+  toHost({ t: 'yeet', target: tg, p: o.toArray().map(x => +x.toFixed(2)), v: v.toArray().map(x => +x.toFixed(2)) });
+  sfx('throw', o);
+}
+// 바라보는 방향 가까이 있는 동료
+function facingPeer(maxD, minDot, filter){
+  const f = aimDir(new V3()).setY(0).normalize();
+  let best = null, bd = maxD;
+  for (const [id, p] of peers){
+    if (!p.av || (filter && !filter(id, p))) continue;
+    const d = _v.set(p.pos.x - me.pos.x, 0, p.pos.z - me.pos.z), dist = d.length();
+    if (Math.abs(p.pos.y - me.pos.y) > 1.6) continue;
+    if (dist < bd && (dist < .5 || d.normalize().dot(f) > minDot)){ bd = dist; best = id; }
+  }
+  return best;
 }
 function useTool(){
   if (THROWN.includes(me.tool)) throwExplosive(me.tool);
@@ -3386,10 +3652,22 @@ function findRubble(){
 }
 function updateInteract(){
   inter = null;
-  const own = me.tool !== 'hands' && me.tool !== 'hammer';
-  if (!joined || me.down > 0 || !toolsAllowed()) return;
+  const own = me.tool !== 'hands' && me.tool !== 'hammer' && me.tool !== 'person';
+  if (!joined || !toolsAllowed()) return;
+  const held = carry[myId];
+  if (held){ inter = held.k === 'c' ? { kind: 'mash', label: '버둥거리기' } : { kind: 'leave', label: '놓기' }; return; }
+  if (me.buried > 0){ inter = { kind: 'mash', label: `빠져나오기 ${me.buried}` }; return; }
+  if (me.down > 0) return;
   const g = GEAR_BY[me.tool];
-  if (me.tool === 'hands'){ inter = { kind: 'throw', label: '던지기' }; return; }
+  if (me.tool === 'person'){ inter = { kind: 'yeet', label: `던지기 · ${nameOf(carriedBy(myId))}` }; return; }
+  if (me.tool === 'hands'){ inter = { kind: 'throw', label: heavyLoad(myId) && !helpersOf(myId) ? '내려놓기' : '던지기' }; return; }
+  if (me.tool === 'hammer'){
+    // 깔린 동료 꺼내기 · 무거운 걸 든 동료 돕기
+    const bur = facingPeer(2.2, -1, (id, p) => p.bu);
+    if (bur){ inter = { kind: 'dig', target: bur, label: `꺼내기 · ${nameOf(bur)}` }; return; }
+    const hv = facingPeer(2.2, .3, id => heavyLoad(id) && !carry[id]);
+    if (hv){ inter = { kind: 'help', target: hv, label: `같이 들기 · ${nameOf(hv)}` }; return; }
+  }
   // 고소 크레인: 뒤쪽 조종석 · 바구니
   if (team.owned.lift){
     const role = liftRole(myId);
@@ -3411,6 +3689,11 @@ function updateInteract(){
     inter = { kind: 'item', id: best.id, label: `${own ? '바꿔 들기' : '줍기'} · ${bg.name}` };
     return;
   }
+  // 바로 앞 동료를 머리 위로 들기
+  if (me.tool === 'hammer' && !liftRole(myId)){
+    const tg = facingPeer(1.7, .75, (id, p) => !carry[id] && !liftRole(id) && !p.fl);
+    if (tg){ inter = { kind: 'grab', target: tg, label: `들기 · ${nameOf(tg)}` }; return; }
+  }
   // 잔해 (개인 망치만 들고 있을 때 — 망치는 허리에 찬다)
   if (me.tool === 'hammer'){
     const r = findRubble();
@@ -3421,6 +3704,16 @@ function updateInteract(){
 function doInteract(){
   if (!inter) return;
   if (inter.kind === 'throw') throwRubble();
+  else if (inter.kind === 'yeet') throwPerson();
+  else if (inter.kind === 'grab'){ toHost({ t: 'carry', act: 'grab', target: inter.target }); sfx('pick', me.pos); }
+  else if (inter.kind === 'help') toHost({ t: 'carry', act: 'help', target: inter.target });
+  else if (inter.kind === 'leave') toHost({ t: 'carry', act: 'leave' });
+  else if (inter.kind === 'dig'){ broadcast({ t: 'dig', target: inter.target }); sfx('hit', playerPos(inter.target)); me.av.throwT = 0; }
+  else if (inter.kind === 'mash'){
+    me.av.throwT = 0;
+    if (me.buried > 0){ me.buried--; shake = Math.min(1.4, shake + .15); if (me.buried <= 0) unbury(null); }
+    else if (carry[myId] && ++me.mash >= 10){ me.mash = 0; toHost({ t: 'carry', act: 'escape' }); }
+  }
   else if (inter.kind === 'liftOp') toHost({ t: 'lift', act: 'op' });
   else if (inter.kind === 'liftRide') toHost({ t: 'lift', act: 'ride' });
   else if (inter.kind === 'liftLeave') toHost({ t: 'lift', act: 'leave' });
@@ -3476,7 +3769,7 @@ function crewList(){
 }
 function fmtTime(ms){ const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 $('#shopBtn').addEventListener('click', () => { if (joined) openShop(true); });
-function toolName(id){ return id === 'hands' ? '잔해 들기' : GEAR_BY[id].name; }
+function toolName(id){ return id === 'hands' ? '잔해 들기' : id === 'person' ? '사람 들기' : GEAR_BY[id].name; }
 function updateHUD(){
   const fill = Math.min(100, team.delivered / QUOTA * 100).toFixed(1) + '%';
   setText($('#progPct'), 'pct', fmtMoney(team.delivered));
@@ -3502,8 +3795,8 @@ function updateHUD(){
   setHTML($('#center'), 'center', center);
   // 작업반: 누가 무엇을 들었는지
   const rows = crewList().map(({ id }) => {
-    const tl = toolOf(id), n = loadOf(id);
-    const what = tl === 'hands' ? '잔해 들기' : toolName(tl);
+    const tl = toolOf(id);
+    const what = carry[id]?.k === 'c' ? '들림' : (id === myId ? me.buried > 0 : peers.get(id)?.bu) ? '깔림' : heavyLoad(id) ? '금고 운반' : toolName(tl);
     return `<div class="crewRow"><span class="dot" style="background:${colorOf(id)}"></span><span class="nm">${esc(nameOf(id))}${id === myId ? ' <span class="me">(나)</span>' : ''}</span>${id === hostId ? '<span class="badge">방장</span>' : ''}<span class="sc">${esc(what)}</span></div>`;
   }).join('');
   setHTML($('#crewList'), 'crew', rows);
@@ -3529,13 +3822,18 @@ function updateHUD(){
   // 손에 든 것
   const g = GEAR_BY[me.tool];
   let sub = '';
-  if (liftRole(myId) === 'op') sub = 'A·D 회전 · W·S 높이 · Space·Shift 길이';
-  else if (me.tool === 'hands') sub = 'E 던지기';
-  else if (me.tool === 'hammer') sub = '좌클릭 · E 줍기';
+  if (carry[myId]?.k === 'c') sub = 'E 연타 탈출 · 좌클릭 가능';
+  else if (carry[myId]) sub = '같이 드는 중 · E 놓기';
+  else if (me.buried > 0) sub = 'E 연타';
+  else if (liftRole(myId) === 'op') sub = 'A·D 회전 · W·S 높이 · Space·Shift 길이';
+  else if (me.tool === 'person') sub = 'E 던지기';
+  else if (me.tool === 'hands') sub = heavyLoad(myId) && !helpersOf(myId) ? '무거움 · 동료가 E로 같이 들기' : 'E 던지기';
+  else if (me.tool === 'hammer') sub = '좌클릭 · E 줍기 · Q 표시';
   else if (g.type === 'throw') sub = `${team.ch[me.tool] || 0}개 · 좌클릭`;
   else if (g.type === 'crane'){ const w = Math.ceil((team.craneAt - t) / 1000); sub = w > 0 ? `${w}초` : '좌클릭'; }
   else sub = '좌클릭';
-  setHTML($('#hands'), 'hands', `<b>${esc(toolName(me.tool))}</b>${esc(sub)}`);
+  const title = carry[myId]?.k === 'c' ? `${nameOf(carry[myId].by)}에게 들림` : me.buried > 0 ? '깔림' : toolName(me.tool);
+  setHTML($('#hands'), 'hands', `<b>${esc(title)}</b>${esc(sub)}`);
   // E 안내
   const ie = $('#interact');
   if (inter && !shopOpen){ setHTML(ie, 'inter', inter.kind === 'none' ? esc(inter.label) : `<kbd>E</kbd> ${esc(inter.label)}`); ie.classList.remove('hidden'); ie.classList.toggle('off', !!inter.off); }
@@ -3568,7 +3866,7 @@ function updateHUD(){
   let hint = '';
   if (shopOpen) hint = '';
   else if (!locked) hint = '클릭해서 조작';
-  else if (me.down > 0) hint = '쓰러짐';
+  else if (me.down > 0 && !me.buried) hint = '쓰러짐';
   setText($('#hint'), 'hint', hint);
   $('#hint').classList.toggle('hidden', !hint);
 }
@@ -3580,6 +3878,14 @@ function showEnd(){
   $('#endTitle').style.color = r.ok ? '#8bdc3a' : '#ff5a3c';
   $('#endSub').textContent = r.ok ? `${fmtTime(r.time)} 만에 ${fmtMoney(r.got)} 납품` : `납품 ${fmtMoney(r.got)} / 목표 ${fmtMoney(S.quota)}`;
   const ids = crewList().map(x => x.id);
+  const val = (id, k) => id === myId ? ({ blocks: stats[myId]?.blocks || 0, carried: carried[myId] || 0, yeets: me.yeets, flown: me.flown, smacks: me.smacks, saves: me.saves, downs: me.downs })[k]
+    : k === 'carried' ? carried[id] || 0 : stats[id]?.[k] || 0;
+  const AW = [['carried', '납품왕'], ['blocks', '파괴왕'], ['saves', '구조대'], ['yeets', '인간 투석기'], ['flown', '인간 포탄'], ['smacks', '방해꾼'], ['downs', '깔림 전문']];
+  $('#endAwards').innerHTML = AW.map(([k, label]) => {
+    let best = null, bv = 0;
+    for (const id of ids){ const v = val(id, k); if (v > bv){ bv = v; best = id; } }
+    return best ? `<div>${label}<b style="color:${colorOf(best)}">${esc(nameOf(best))}</b> ${bv}</div>` : '';
+  }).join('');
   $('#endRows').innerHTML = ids.map(id => `<tr><td><span class="dot" style="display:inline-block;margin-right:6px;background:${colorOf(id)}"></span>${esc(nameOf(id))}</td><td>${stats[id]?.blocks || 0}</td><td>${carried[id] || 0}</td><td>${id === myId ? me.downs : stats[id]?.downs || 0}</td></tr>`).join('');
   $('#endPanel').classList.remove('hidden');
 }
@@ -3593,6 +3899,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
   if (e.code === 'KeyE'){ me.eT = .3; doInteract(); }
+  if (e.code === 'KeyQ') sendPing();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseL = false; });
@@ -3692,7 +3999,7 @@ function sendState(){
   if (!net || !joined) return;
   send({ t: 'st', name: myName, color: myColor, ja: joinedAt, p: me.pos.toArray().map(v => +v.toFixed(3)), yaw: +me.yaw.toFixed(3),
     sp: +Math.hypot(me.vel.x, me.vel.z).toFixed(2), sw: me.sw, th: me.th, dn: me.down > 0, downs: me.downs,
-    dr: me.drilling, pt: +me.pitch.toFixed(2) });
+    dr: me.drilling, pt: +me.pitch.toFixed(2), fl: me.flyT > 0 ? 1 : 0, bu: me.buried > 0 ? 1 : 0, aw: [me.yeets, me.flown, me.smacks, me.saves] });
   if (lift.op === myId) send({ t: 'lp', yaw: +liftPose.yaw.toFixed(3), pitch: +liftPose.pitch.toFixed(3), ext: +liftPose.ext.toFixed(2) });
 }
 async function startPlaying(){
@@ -3770,17 +4077,22 @@ function frame(){
   if (joined){
     for (const [id, p] of peers){
       if (!p.av || !p.tp) continue;
-      const k = 1 - Math.exp(-dt * 12);
-      p.pos.lerp(p.tp, k);
+      const k = 1 - Math.exp(-dt * 12), cb = carry[id], cp = cb && playerPos(cb.by);
+      let yaw = p.yaw;
+      if (cp){
+        const cy = cb.by === myId ? me.yaw : (peers.get(cb.by)?.yaw ?? 0);
+        if (cb.k === 'c'){ p.pos.set(cp.x, cp.y + 1.75, cp.z); yaw = cy; }
+        else p.pos.set(cp.x + Math.cos(cy) * .75, cp.y, cp.z - Math.sin(cy) * .75);
+      } else p.pos.lerp(p.tp, k);
       p.av.g.position.copy(p.pos);
-      let dy = p.yaw - p.av.g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      let dy = yaw - p.av.g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       p.av.g.rotation.y += dy * k;
       setAvatarTool(p.av, toolOf(id));
-      setAvatarLoad(p.av, loadOf(id));
-      animAvatar(p.av, p.sp, dt, p.dn, p.dr, p.pt);
+      setAvatarLoad(p.av, loadOf(id), heavyLoad(id));
+      animAvatar(p.av, p.sp, dt, p.dn, p.dr, p.pt, poseOf(id, p.fl, p.bu));
     }
     if (amHost()) hostTick();
-    if (shownWorld) updateHUD(); else updateRoomView();
+    if (shownWorld){ updateHUD(); updatePings(raw); } else updateRoomView();
   }
   updateTruckVisual();
   updateLift(dt);
